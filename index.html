@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>日语深度记忆训练 V3.2</title>
+    <title>日语深度记忆训练 V3.4</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
@@ -16,7 +16,7 @@
 <body class="text-slate-800 h-screen flex flex-col">
 
     <nav class="bg-indigo-600 text-white p-4 shadow-md flex justify-between items-center shrink-0">
-        <h1 class="font-bold text-lg tracking-wide">🇯🇵 深度记忆 V3.2</h1>
+        <h1 class="font-bold text-lg tracking-wide">🇯🇵 深度记忆 V3.4 (断点续存版)</h1>
         <div class="space-x-3 text-sm">
             <button onclick="toggleModal('historyModal')" class="hover:text-indigo-200 transition">📜 历史</button>
             <button onclick="toggleModal('notebookModal')" class="bg-white text-indigo-600 px-3 py-1 rounded-full font-bold hover:bg-indigo-50 transition shadow">📕 生词本 (<span id="notebookCount">0</span>)</button>
@@ -24,24 +24,31 @@
     </nav>
 
     <main class="flex-grow flex flex-col items-center justify-center p-4 overflow-y-auto">
-        
         <div id="uploadSection" class="w-full max-w-md bg-white p-8 rounded-2xl shadow-xl text-center fade-in">
             <div class="mb-6">
                 <div class="mx-auto h-16 w-16 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center mb-4 text-2xl">📂</div>
                 <h2 class="text-2xl font-bold text-slate-700">开始训练</h2>
-                <p class="text-slate-500 mt-2 text-sm">支持多文件、多Sheet自动合并</p>
+                <p class="text-slate-500 mt-2 text-sm">支持多Sheet合并、符号兼容及断点续记</p>
             </div>
             
+            <div id="resumeBox" class="hidden-section mb-6 p-4 bg-amber-50 border border-amber-200 rounded-xl text-left">
+                <p class="text-xs font-bold text-amber-700 mb-2">检测到上次未完成的进度：</p>
+                <p id="resumeInfo" class="text-xs text-amber-600 mb-3"></p>
+                <div class="flex space-x-2">
+                    <button onclick="resumeStudy()" class="flex-1 bg-amber-500 text-white text-xs py-2 rounded-lg font-bold">继续上次</button>
+                    <button onclick="clearSavedProgress()" class="flex-1 bg-slate-200 text-slate-600 text-xs py-2 rounded-lg font-bold">重新开始</button>
+                </div>
+            </div>
+
             <label class="block w-full cursor-pointer bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-xl transition shadow-lg transform active:scale-95">
-                选择文件 (支持多选)
+                选择新文件
                 <input type="file" id="fileInput" class="hidden" accept=".xlsx, .xls" multiple />
             </label>
-            <p class="mt-4 text-xs text-slate-400">格式：A写法 | B读音 | C中文</p>
         </div>
 
         <div id="studySection" class="hidden-section w-full max-w-md">
             <div class="mb-4 flex justify-between text-xs font-bold text-slate-500 px-1">
-                <span>剩余: <span id="remainCount">0</span> / <span id="totalCount">0</span></span>
+                <span>位置: <span id="remainCount">0</span> / <span id="totalCount">0</span></span>
                 <span>进度: <span id="percentText">0%</span></span>
             </div>
             <div class="w-full bg-slate-200 rounded-full h-2 mb-6">
@@ -51,45 +58,40 @@
             <div class="bg-white rounded-2xl shadow-xl overflow-hidden min-h-[400px] flex flex-col relative fade-in">
                 <div class="bg-slate-50 p-6 text-center border-b border-slate-100">
                     <span class="inline-block px-3 py-1 bg-indigo-100 text-indigo-600 rounded-full text-xs font-bold tracking-wider mb-2">中文含义</span>
-                    <h3 id="questionText" class="text-3xl font-bold text-slate-800 min-h-[48px] flex items-center justify-center">加载中...</h3>
+                    <h3 id="questionText" class="text-3xl font-bold text-slate-800 min-h-[48px] flex items-center justify-center">...</h3>
                 </div>
 
                 <div class="p-6 flex-grow flex flex-col justify-center space-y-4">
                     <div id="step1" class="space-y-2">
-                        <label class="text-xs font-bold text-slate-400 uppercase">Step 1: 输入假名 (读音)</label>
-                        <input type="text" id="inputKana" class="w-full border-2 border-slate-200 rounded-xl p-3 text-lg focus:outline-none focus:border-indigo-500 transition text-center" placeholder="例如: わたし" autocomplete="off">
+                        <label class="text-xs font-bold text-slate-400 uppercase">Step 1: 读音 (假名)</label>
+                        <input type="text" id="inputKana" class="w-full border-2 border-slate-200 rounded-xl p-3 text-lg focus:outline-none focus:border-indigo-500 transition text-center" autocomplete="off">
                     </div>
-
                     <div id="step2" class="hidden-section space-y-2">
-                        <label class="text-xs font-bold text-slate-400 uppercase">Step 2: 输入日文写法</label>
-                        <input type="text" id="inputKanji" class="w-full border-2 border-slate-200 rounded-xl p-3 text-lg focus:outline-none focus:border-indigo-500 transition text-center" placeholder="例如: 私" autocomplete="off">
+                        <label class="text-xs font-bold text-slate-400 uppercase">Step 2: 写法 (汉字/假名)</label>
+                        <input type="text" id="inputKanji" class="w-full border-2 border-slate-200 rounded-xl p-3 text-lg focus:outline-none focus:border-indigo-500 transition text-center" autocomplete="off">
                     </div>
-
                     <div id="feedback" class="text-center text-sm font-bold min-h-[24px]"></div>
                 </div>
 
-                <div class="p-4 bg-slate-50 border-t border-slate-100">
-                    <button id="btnSubmit" onclick="checkAnswer()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl shadow-md transition transform active:scale-95">提交 (Enter)</button>
-                    <button id="btnNext" onclick="loadNextWord()" class="hidden-section w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 rounded-xl shadow-md transition transform active:scale-95">下一个 (Enter)</button>
+                <div class="p-4 bg-slate-50 border-t border-slate-100 flex space-x-2">
+                    <button id="btnSubmit" onclick="checkAnswer()" class="flex-grow bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl shadow-md transition transform active:scale-95">提交 (Enter)</button>
+                    <button id="btnNext" onclick="loadNextWord()" class="hidden-section flex-grow bg-green-500 hover:bg-green-600 text-white font-bold py-3 rounded-xl shadow-md transition transform active:scale-95">下一个 (Enter)</button>
                 </div>
             </div>
         </div>
 
         <div id="finishSection" class="hidden-section text-center fade-in bg-white p-8 rounded-2xl shadow-xl max-w-sm">
             <div class="text-6xl mb-4">🎉</div>
-            <h2 class="text-2xl font-bold text-slate-800 mb-2">本次训练完成！</h2>
-            <p class="text-slate-600 mb-6">所有的责任你都担起来了。这就是执行力。</p>
-            <button onclick="location.reload()" class="bg-indigo-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-indigo-700 transition">再来一组</button>
+            <h2 class="text-2xl font-bold text-slate-800">完成！</h2>
+            <p class="mt-4 text-slate-500 text-sm">今日的责任已达成。</p>
+            <button onclick="clearSavedProgress(); location.reload();" class="mt-6 bg-indigo-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-indigo-700">开始新一轮</button>
         </div>
     </main>
 
     <div id="notebookModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50 p-4">
-        <div class="bg-white rounded-2xl w-full max-w-2xl max-h-[80vh] flex flex-col">
-            <div class="p-4 border-b flex justify-between items-center bg-indigo-50 rounded-t-2xl">
-                <h3 class="font-bold text-lg text-indigo-900">📕 生词本</h3>
-                <button onclick="toggleModal('notebookModal')" class="text-slate-400 hover:text-slate-600 text-2xl">&times;</button>
-            </div>
-            <div class="p-4 overflow-y-auto flex-grow"><table class="w-full text-left"><tbody id="notebookList"></tbody></table><div id="emptyNotebookMsg" class="text-center text-slate-400 py-10 hidden">暂无生词。</div></div>
+        <div class="bg-white rounded-2xl w-full max-w-2xl max-h-[80vh] flex flex-col shadow-2xl">
+            <div class="p-4 border-b flex justify-between items-center bg-indigo-50 rounded-t-2xl"><h3 class="font-bold text-lg text-indigo-900">📕 生词本</h3><button onclick="toggleModal('notebookModal')" class="text-slate-400 hover:text-slate-600 text-2xl">&times;</button></div>
+            <div class="p-4 overflow-y-auto flex-grow"><table class="w-full text-left border-collapse"><tbody id="notebookList" class="text-sm"></tbody></table><div id="emptyNotebookMsg" class="text-center text-slate-400 py-10 hidden">暂无。</div></div>
             <div class="p-4 border-t bg-slate-50 text-right"><button onclick="clearNotebook()" class="text-red-500 text-xs mr-4">清空</button><button onclick="toggleModal('notebookModal')" class="bg-slate-200 px-4 py-2 rounded-lg text-sm font-bold">关闭</button></div>
         </div>
     </div>
@@ -111,8 +113,43 @@
         let vocabNotebook = JSON.parse(localStorage.getItem('gina_vocab_notebook')) || [];
         let uploadHistory = JSON.parse(localStorage.getItem('gina_upload_history')) || [];
 
-        updateNotebookUI();
-        updateHistoryUI();
+        // 初始化时检查是否有断点
+        checkSavedProgress();
+
+        function normalize(str) {
+            if (!str) return "";
+            return str.toString().trim().replace(/[ー－—–-]/g, '-').replace(/\s+/g, '').toLowerCase();
+        }
+
+        function checkSavedProgress() {
+            const savedData = localStorage.getItem('gina_study_snapshot');
+            if (savedData) {
+                const snapshot = JSON.parse(savedData);
+                document.getElementById('resumeBox').classList.remove('hidden-section');
+                document.getElementById('resumeInfo').innerText = `已背完 ${snapshot.index} / ${snapshot.queue.length} 个单词`;
+            }
+        }
+
+        function resumeStudy() {
+            const snapshot = JSON.parse(localStorage.getItem('gina_study_snapshot'));
+            studyQueue = snapshot.queue;
+            currentIndex = snapshot.index;
+            totalWords = studyQueue.length;
+            startStudy();
+        }
+
+        function clearSavedProgress() {
+            localStorage.removeItem('gina_study_snapshot');
+            document.getElementById('resumeBox').classList.add('hidden-section');
+        }
+
+        function saveSnapshot() {
+            const snapshot = {
+                queue: studyQueue,
+                index: currentIndex
+            };
+            localStorage.setItem('gina_study_snapshot', JSON.stringify(snapshot));
+        }
 
         document.getElementById('fileInput').addEventListener('change', async (e) => {
             const files = e.target.files;
@@ -127,18 +164,19 @@
             localStorage.setItem('gina_upload_history', JSON.stringify(uploadHistory.slice(0, 50)));
             updateHistoryUI();
             
-            if (allData.length === 0) { alert("未找到有效数据！"); return; }
-            
+            if (allData.length === 0) return;
             studyQueue = shuffle(allData);
             totalWords = studyQueue.length;
             currentIndex = 0;
-            
+            startStudy();
+        });
+
+        function startStudy() {
             document.getElementById('uploadSection').classList.add('hidden-section');
             document.getElementById('studySection').classList.remove('hidden-section');
             document.getElementById('totalCount').innerText = totalWords;
-            
             loadNextWord();
-        });
+        }
 
         function parseExcel(file) {
             return new Promise((resolve) => {
@@ -171,21 +209,20 @@
             if (currentIndex >= studyQueue.length) {
                 document.getElementById('studySection').classList.add('hidden-section');
                 document.getElementById('finishSection').classList.remove('hidden-section');
+                clearSavedProgress(); // 完成后清除存档
                 return;
             }
 
             currentWord = studyQueue[currentIndex];
             wrongAttempts = 0;
+            saveSnapshot(); // 加载新词时也存档，防止意外中断
 
-            // UI 更新
             document.getElementById('questionText').innerText = currentWord.meaning || "（无中文）";
             document.getElementById('remainCount').innerText = currentIndex + 1;
-            
             const progress = (currentIndex / totalWords) * 100;
             document.getElementById('progressBar').style.width = `${progress}%`;
             document.getElementById('percentText').innerText = `${Math.round(progress)}%`;
 
-            // 重置输入状态
             document.getElementById('inputKana').value = '';
             document.getElementById('inputKanji').value = '';
             document.getElementById('inputKana').disabled = false;
@@ -193,46 +230,33 @@
             document.getElementById('step1').classList.remove('opacity-50');
             document.getElementById('step2').classList.add('hidden-section');
             document.getElementById('feedback').innerText = '';
-            
             document.getElementById('btnSubmit').classList.remove('hidden-section');
             document.getElementById('btnNext').classList.add('hidden-section');
-            
-            setTimeout(() => document.getElementById('inputKana').focus(), 10);
+            setTimeout(() => document.getElementById('inputKana').focus(), 50);
         }
 
         function checkAnswer() {
-            const feedbackEl = document.getElementById('feedback');
             const step2Visible = !document.getElementById('step2').classList.contains('hidden-section');
-
             if (!step2Visible) {
-                // 检查读音
-                if (document.getElementById('inputKana').value.trim() === currentWord.kana) {
-                    feedbackEl.innerText = "✓ 读音正确，请写出汉字";
-                    feedbackEl.className = "text-center text-sm font-bold text-indigo-600";
+                if (normalize(document.getElementById('inputKana').value) === normalize(currentWord.kana)) {
                     document.getElementById('inputKana').disabled = true;
                     document.getElementById('step1').classList.add('opacity-50');
                     document.getElementById('step2').classList.remove('hidden-section');
                     document.getElementById('inputKanji').disabled = false;
                     document.getElementById('inputKanji').focus();
-                } else {
-                    handleWrong("读音错误");
-                }
+                    document.getElementById('feedback').innerText = "✓ 读音正确";
+                    document.getElementById('feedback').className = "text-center text-sm font-bold text-indigo-600";
+                } else { handleWrong("读音错误"); }
             } else {
-                // 检查写法
-                if (document.getElementById('inputKanji').value.trim() === currentWord.kanji) {
-                    feedbackEl.innerText = "🎉 正确！按回车继续";
-                    feedbackEl.className = "text-center text-sm font-bold text-green-600";
+                if (normalize(document.getElementById('inputKanji').value) === normalize(currentWord.kanji)) {
                     document.getElementById('inputKanji').disabled = true;
-                    
-                    // 关键点：在跳转前增加索引
                     currentIndex++; 
-                    
+                    saveSnapshot(); // 答对后即刻存档
                     document.getElementById('btnSubmit').classList.add('hidden-section');
-                    document.getElementById('btnNext').classList.remove('hidden-section');
-                    document.getElementById('btnNext').focus();
-                } else {
-                    handleWrong("写法错误");
-                }
+                    document.getElementById('btnNext').classList.remove('hidden-section').focus();
+                    document.getElementById('feedback').innerText = "🎉 正确！";
+                    document.getElementById('feedback').className = "text-center text-sm font-bold text-green-600";
+                } else { handleWrong("写法错误"); }
             }
         }
 
@@ -260,44 +284,30 @@
                 vocabNotebook.forEach((w, i) => {
                     const r = document.createElement('tr');
                     r.className = "border-b text-xs";
-                    r.innerHTML = `<td class="py-2 font-bold">${w.kanji}</td><td class="px-2">${w.kana}</td><td>${w.meaning}</td><td class="text-right"><button onclick="removeNB(${i})" class="text-green-600 font-bold">已掌握</button></td>`;
+                    r.innerHTML = `<td class="py-2 font-bold">${w.kanji}</td><td class="px-2">${w.kana}</td><td>${w.meaning}</td><td class="text-right"><button onclick="removeNB(${i})" class="text-green-600 font-bold">已记熟</button></td>`;
                     list.appendChild(r);
                 });
             }
         }
 
-        function removeNB(i) { if(confirm('真的记住了吗？')) { vocabNotebook.splice(i,1); localStorage.setItem('gina_vocab_notebook', JSON.stringify(vocabNotebook)); updateNotebookUI(); } }
+        function removeNB(i) { if(confirm('记住了？')) { vocabNotebook.splice(i,1); localStorage.setItem('gina_vocab_notebook', JSON.stringify(vocabNotebook)); updateNotebookUI(); } }
         function clearNotebook() { if(confirm('全清空？')) { vocabNotebook = []; localStorage.setItem('gina_vocab_notebook', JSON.stringify(vocabNotebook)); updateNotebookUI(); } }
         function updateHistoryUI() {
             const list = document.getElementById('historyList');
             list.innerHTML = '';
-            if (!uploadHistory.length) document.getElementById('historyList').innerHTML = '<li class="text-center text-slate-400">暂无记录</li>';
-            else uploadHistory.forEach(h => {
-                const li = document.createElement('li');
-                li.innerHTML = `📜 ${h}`;
-                list.appendChild(li);
-            });
+            if (!uploadHistory.length) list.innerHTML = '<li class="text-center text-slate-400">暂无</li>';
+            else uploadHistory.forEach(h => { const li = document.createElement('li'); li.innerHTML = `📜 ${h}`; list.appendChild(li); });
         }
-
         function toggleModal(id) { document.getElementById(id).classList.toggle('hidden'); }
         function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
 
         document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') { document.getElementById('notebookModal').classList.add('hidden'); document.getElementById('historyModal').classList.add('hidden'); }
+            if (e.key === 'Escape') { document.querySelectorAll('[id$="Modal"]').forEach(m => m.classList.add('hidden')); }
             if (e.key === 'Enter') {
-                const isStudyVisible = !document.getElementById('studySection').classList.contains('hidden-section');
-                if (!isStudyVisible) return;
-                
+                if (document.getElementById('studySection').classList.contains('hidden-section')) return;
                 const btnSubmit = document.getElementById('btnSubmit');
-                const btnNext = document.getElementById('btnNext');
-                
-                if (!btnSubmit.classList.contains('hidden-section')) {
-                    checkAnswer();
-                    e.preventDefault();
-                } else if (!btnNext.classList.contains('hidden-section')) {
-                    loadNextWord();
-                    e.preventDefault();
-                }
+                if (!btnSubmit.classList.contains('hidden-section')) { checkAnswer(); e.preventDefault(); }
+                else if (!document.getElementById('btnNext').classList.contains('hidden-section')) { loadNextWord(); e.preventDefault(); }
             }
         });
     </script>
