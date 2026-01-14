@@ -1,241 +1,420 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <title>G-COMMANDER V6.3 | 终极整合版</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <style>
-        body { font-family: 'Inter', system-ui, -apple-system, sans-serif; background: #f8fafc; }
-        .glass { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.2); }
-        .hidden { display: none !important; }
-        .active-mode { background: #4f46e5 !important; color: white !important; }
-        .card-shadow { box-shadow: 0 20px 50px -12px rgba(79, 70, 229, 0.2); }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>G-COMMANDER - JLPT 单词训练</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap');
+    body { 
+      font-family: 'Noto Sans SC', sans-serif;
+      background: linear-gradient(135deg, #1e1e2e 0%, #2d2d44 100%);
+      min-height: 100vh;
+    }
+    .glass {
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .gradient-card {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      box-shadow: 0 20px 60px rgba(102, 126, 234, 0.3);
+    }
+    input:focus { outline: none; }
+    .shake { animation: shake 0.5s; }
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-10px); }
+      75% { transform: translateX(10px); }
+    }
+  </style>
 </head>
-<body class="text-slate-800 h-screen flex flex-col overflow-hidden">
+<body class="p-4">
+  <div id="app" class="max-w-4xl mx-auto"></div>
 
-    <nav class="bg-indigo-600 text-white p-4 shadow-xl flex justify-between items-center z-50">
-        <div class="flex items-center space-x-3">
-            <span class="font-black text-2xl tracking-tighter cursor-pointer" onclick="location.reload()">G-COMMANDER</span>
-            <span class="text-[10px] bg-indigo-500 px-2 py-0.5 rounded-full font-bold">V6.3 FINAL</span>
-        </div>
-        <div class="flex space-x-6 text-sm font-black">
-            <button onclick="toggleM('sbM')" class="hover:text-indigo-200 transition">☠️ 顽固 <span id="sC" class="bg-slate-800 px-1.5 rounded ml-1">0</span></button>
-            <button onclick="toggleM('nbM')" class="hover:text-indigo-200 transition">📕 生词 <span id="nC" class="bg-white text-indigo-600 px-1.5 rounded ml-1">0</span></button>
-        </div>
-    </nav>
-
-    <main class="flex-grow overflow-y-auto p-6 md:p-12 flex flex-col items-center">
+  <script>
+    const APP = {
+      state: {
+        page: 'home',
+        words: [],
+        current: 0,
+        mode: 'deep',
+        step: 'reading', // 'reading' | 'kanji' | 'done'
+        input: '',
+        feedback: '',
+        progress: { studied: 0, correct: 0 },
+        notebook: [], // 生词本
+        stubborn: []  // 顽固本 (错误3次以上)
+      },
+      
+      init() {
+        this.loadData();
+        this.render();
+      },
+      
+      loadData() {
+        const nb = localStorage.getItem('gina_nb');
+        const sb = localStorage.getItem('gina_stubborn');
+        const prog = localStorage.getItem('gina_progress');
+        if (nb) this.state.notebook = JSON.parse(nb);
+        if (sb) this.state.stubborn = JSON.parse(sb);
+        if (prog) this.state.progress = JSON.parse(prog);
+      },
+      
+      saveData() {
+        localStorage.setItem('gina_nb', JSON.stringify(this.state.notebook));
+        localStorage.setItem('gina_stubborn', JSON.stringify(this.state.stubborn));
+        localStorage.setItem('gina_progress', JSON.stringify(this.state.progress));
+      },
+      
+      render() {
+        const el = document.getElementById('app');
+        el.innerHTML = this.state.page === 'home' ? this.renderHome() : this.renderTrain();
+        this.attachEvents();
+      },
+      
+      renderHome() {
+        const targetDate = new Date('2026-07-05');
+        const today = new Date();
+        const daysLeft = Math.ceil((targetDate - today) / (1000 * 60 * 60 * 24));
+        const quotes = [
+          "屏蔽情绪误导,用理性看待",
+          "担得起责任二字",
+          "Excellence is not a skill, it's an attitude",
+          "完成比完美更重要"
+        ];
+        const quote = quotes[Math.floor(Math.random() * quotes.length)];
         
-        <div id="hS" class="w-full max-w-5xl space-y-8 animate-in fade-in duration-500">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div class="bg-gradient-to-br from-indigo-600 to-purple-700 p-10 rounded-[3rem] text-white card-shadow flex flex-col justify-between border-b-8 border-indigo-800 relative overflow-hidden">
-                    <div class="relative z-10">
-                        <p class="text-[10px] font-black opacity-60 uppercase tracking-widest mb-1">JLPT 2026 Countdown</p>
-                        <div class="text-8xl font-black mb-6" id="cD">--</div>
-                        <p class="text-sm italic border-l-2 border-indigo-400 pl-4 py-1" id="mT">"担得起责任二字。"</p>
-                    </div>
-                    <div class="mt-8 bg-black/20 p-5 rounded-2xl relative z-10">
-                        <p class="text-[10px] font-black mb-1 uppercase text-indigo-200">今日理性建议</p>
-                        <p id="tT" class="text-xs font-bold leading-relaxed">屏蔽情绪误导，用理性来看待所有事情。</p>
-                    </div>
-                    <div class="absolute -right-10 -bottom-10 text-[12rem] opacity-10 font-black rotate-12">G</div>
-                </div>
-
-                <div class="bg-white p-10 rounded-[3rem] shadow-xl border border-slate-100 flex flex-col justify-center">
-                    <h3 class="font-black text-xl mb-6">配置任务环境</h3>
-                    
-                    <div class="mb-6 space-y-3">
-                        <label class="text-[10px] font-black text-slate-400 uppercase">选择训练模式</label>
-                        <div class="flex space-x-2">
-                            <button id="mQ" onclick="sMode('quick')" class="flex-1 py-3 rounded-xl font-bold text-sm bg-slate-100 transition">极速模式</button>
-                            <button id="mD" onclick="sMode('deep')" class="flex-1 py-3 rounded-xl font-bold text-sm bg-slate-100 transition">深度模式</button>
-                        </div>
-                    </div>
-
-                    <label class="flex-grow flex flex-col items-center justify-center border-4 border-dashed border-slate-100 rounded-[2.5rem] hover:border-indigo-400 transition cursor-pointer p-8 group">
-                        <input type="file" id="fI" class="hidden" accept=".xlsx, .xls" />
-                        <span class="text-5xl mb-3 group-hover:scale-110 transition">📂</span>
-                        <span class="font-black text-slate-800">导入 A:词 B:读音 C:含义</span>
-                        <p class="text-[9px] text-slate-400 mt-2 font-bold uppercase">支持 805 核心词表格式</p>
-                    </label>
-                </div>
+        return `
+          <div class="space-y-6">
+            <div class="gradient-card rounded-3xl p-8 text-white">
+              <h1 class="text-4xl font-bold mb-2">G-COMMANDER</h1>
+              <p class="text-lg opacity-90 mb-6">JLPT 冲刺训练系统</p>
+              <div class="bg-white/20 rounded-2xl p-6 mb-4">
+                <div class="text-5xl font-bold mb-2">${daysLeft}</div>
+                <div class="text-sm opacity-90">距离 JLPT 考试还有天数</div>
+              </div>
+              <div class="bg-white/10 rounded-xl p-4 italic">
+                "${quote}"
+              </div>
             </div>
-        </div>
-
-        <div id="sS" class="hidden w-full max-w-xl animate-in zoom-in duration-300">
-            <div class="flex justify-between items-center mb-6">
-                <button onclick="location.reload()" class="bg-white px-4 py-2 rounded-xl shadow-sm text-[10px] font-black text-slate-500 hover:text-indigo-600">← 返回首页</button>
-                <div class="flex space-x-2">
-                    <button id="smQ" onclick="sMode('quick')" class="px-3 py-1 text-[10px] font-bold rounded-lg bg-slate-200">极速</button>
-                    <button id="smD" onclick="sMode('deep')" class="px-3 py-1 text-[10px] font-bold rounded-lg bg-slate-200">深度</button>
+            
+            <div class="glass rounded-2xl p-6 text-white">
+              <h2 class="text-xl font-semibold mb-4">📊 学习统计</h2>
+              <div class="grid grid-cols-3 gap-4 mb-6">
+                <div class="text-center">
+                  <div class="text-3xl font-bold text-purple-400">${this.state.progress.studied}</div>
+                  <div class="text-sm opacity-70">已学习</div>
                 </div>
-            </div>
-
-            <div class="bg-white rounded-[3.5rem] shadow-2xl min-h-[500px] flex flex-col relative border border-slate-50 overflow-hidden">
-                <div id="pB" class="absolute top-0 left-0 h-2 bg-indigo-500 transition-all duration-500" style="width: 0%"></div>
+                <div class="text-center">
+                  <div class="text-3xl font-bold text-green-400">${this.state.notebook.length}</div>
+                  <div class="text-sm opacity-70">生词本</div>
+                </div>
+                <div class="text-center">
+                  <div class="text-3xl font-bold text-red-400">${this.state.stubborn.length}</div>
+                  <div class="text-sm opacity-70">顽固本</div>
+                </div>
+              </div>
+              
+              <div class="space-y-3">
+                <label class="block bg-white/5 rounded-lg p-4 cursor-pointer hover:bg-white/10 transition">
+                  <input type="file" accept=".xlsx,.xls" class="hidden" id="fileInput">
+                  <div class="text-center">
+                    <div class="text-2xl mb-1">📁</div>
+                    <div class="font-medium">上传单词表 (Excel)</div>
+                    <div class="text-xs opacity-60 mt-1">格式: A列-单词 | B列-读音 | C列-含义</div>
+                  </div>
+                </label>
                 
-                <div class="p-12 text-center flex-grow flex flex-col justify-center">
-                    <p id="pos" class="text-[10px] font-black text-slate-300 mb-4 tracking-widest">0 / 0</p>
-                    <h2 id="qT" class="text-4xl md:text-5xl font-black text-slate-800 mb-12 leading-tight">加载中...</h2>
-
-                    <div class="space-y-6 max-w-xs mx-auto w-full">
-                        <input type="text" id="in1" class="w-full border-b-4 border-slate-100 py-3 text-3xl focus:outline-none focus:border-indigo-500 text-center font-bold" placeholder="..." autocomplete="off">
-                        <input type="text" id="in2" class="hidden w-full border-b-4 border-slate-100 py-3 text-3xl focus:outline-none focus:border-indigo-500 text-center font-bold" placeholder="输入汉字" autocomplete="off">
-                        <p id="fB" class="text-[11px] font-black mt-4 h-4"></p>
-                    </div>
-                </div>
-
-                <div class="p-8 bg-slate-50">
-                    <button id="mainBtn" onclick="ctrl()" class="w-full bg-indigo-600 text-white font-black py-5 rounded-2xl shadow-lg active:scale-95 transition text-lg">验证 (Enter)</button>
-                </div>
+                ${this.state.notebook.length > 0 ? `
+                  <button class="w-full bg-orange-500 hover:bg-orange-600 rounded-lg p-4 font-medium transition" onclick="APP.startReview()">
+                    🔥 突击复习生词本 (${this.state.notebook.length}词)
+                  </button>
+                ` : ''}
+                
+                ${this.state.stubborn.length > 0 ? `
+                  <button class="w-full bg-red-500 hover:bg-red-600 rounded-lg p-4 font-medium transition" onclick="APP.startStubborn()">
+                    💀 攻克顽固本 (${this.state.stubborn.length}词)
+                  </button>
+                ` : ''}
+              </div>
             </div>
-        </div>
-    </main>
-
-    <div id="nbM" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center z-[100] p-4">
-        <div class="bg-white rounded-[2.5rem] w-full max-w-xl max-h-[80vh] flex flex-col shadow-2xl overflow-hidden">
-            <div class="p-6 bg-slate-50 border-b flex justify-between font-black"><span>📕 生词资产</span><button onclick="toggleM('nbM')">✕</button></div>
-            <div id="nbL" class="p-4 overflow-y-auto flex-grow space-y-2"></div>
-            <div class="p-6 border-t bg-slate-50"><button onclick="quickStart('nb')" class="w-full bg-indigo-600 text-white font-black py-4 rounded-2xl shadow-lg">⚔️ 开始突击复习</button></div>
-        </div>
-    </div>
-
-    <div id="sbM" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center z-[100] p-4">
-        <div class="bg-white rounded-[2.5rem] w-full max-w-xl max-h-[80vh] flex flex-col border-4 border-slate-800 overflow-hidden shadow-2xl">
-            <div class="p-6 bg-slate-800 text-white flex justify-between font-black"><span>☠️ 顽固记忆</span><button onclick="toggleM('sbM')">✕</button></div>
-            <div id="sbL" class="p-4 overflow-y-auto flex-grow space-y-2"></div>
-            <div class="p-6 bg-slate-100"><button onclick="quickStart('sb')" class="w-full bg-slate-800 text-white font-black py-4 rounded-2xl shadow-lg">⚔️ 立即清剿</button></div>
-        </div>
-    </div>
-
-    <script>
-        let q = [], idx = 0, cur = null, mode = 'deep', state = 'input';
-        let nb = JSON.parse(localStorage.getItem('gina_nb')) || JSON.parse(localStorage.getItem('gina_vocab_notebook')) || [];
-        let sb = JSON.parse(localStorage.getItem('gina_sb')) || JSON.parse(localStorage.getItem('gina_stubborn_notebook')) || [];
-        const tips = ["执行目标，而不是一直在计划目标。", "先难后易，解决问题。", "屏蔽情绪的误导，用理性看待。", "担得起责任二字。", "不要自卑。"];
-
-        window.onload = () => {
-            const d = Math.ceil((new Date('2026-07-05') - new Date()) / (1000*60*60*24));
-            document.getElementById('cD').innerText = d > 0 ? d : "GO!";
-            document.getElementById('mT').innerText = tips[Math.floor(Math.random()*tips.length)];
-            document.getElementById('tT').innerText = tips[Math.floor(Math.random()*tips.length)];
-            updateUI(); sMode('deep');
-        };
-
-        // 文件上传
-        document.getElementById('fI').onchange = (e) => {
-            const r = new FileReader();
-            r.onload = (ev) => {
-                const data = XLSX.utils.sheet_to_json(XLSX.read(new Uint8Array(ev.target.result), {type:'array'}).Sheets[XLSX.read(new Uint8Array(ev.target.result), {type:'array'}).SheetNames[0]], {header:1});
-                q = data.slice(1).map(r => {
-                    let w=String(r[0]||"").trim(), rd=String(r[1]||"").trim(), m=String(r[2]||"").trim();
-                    if(!w) return null;
-                    return { w, rd: /[\u4E00-\u9FAF]/.test(w)?rd:w, m: m||rd, isK: /[\u4E00-\u9FAF]/.test(w) };
-                }).filter(x => x);
-                if(q.length) { q.sort(()=>Math.random()-0.5); idx=0; go(); }
-            };
-            r.readAsArrayBuffer(e.target.files[0]);
-        };
-
-        function go() {
-            document.getElementById('hS').classList.add('hidden');
-            document.getElementById('sS').classList.remove('hidden');
-            load();
+          </div>
+        `;
+      },
+      
+      renderTrain() {
+        if (this.state.words.length === 0) return '<div class="text-white text-center">加载中...</div>';
+        
+        const w = this.state.words[this.state.current];
+        if (!w) {
+          return `
+            <div class="glass rounded-2xl p-8 text-white text-center">
+              <div class="text-6xl mb-4">🎉</div>
+              <h2 class="text-3xl font-bold mb-4">完成本轮训练!</h2>
+              <div class="text-lg mb-6">
+                正确率: ${Math.round(this.state.progress.correct / this.state.progress.studied * 100)}%
+              </div>
+              <button class="bg-purple-500 hover:bg-purple-600 px-8 py-3 rounded-lg font-medium transition" onclick="APP.goHome()">
+                返回首页
+              </button>
+            </div>
+          `;
         }
-
-        function load() {
-            if(idx >= q.length) { 
-                document.getElementById('sS').innerHTML = "<div class='bg-white p-12 rounded-[3.5rem] text-center shadow-2xl'><div class='text-6xl mb-6'>🎯</div><h2 class='text-2xl font-black mb-6'>执行完毕！</h2><button onclick='location.reload()' class='bg-indigo-600 text-white px-10 py-3 rounded-2xl font-black'>回到首页</button></div>";
-                return; 
-            }
-            cur = q[idx]; state = 'input';
-            document.getElementById('qT').innerText = cur.m;
-            document.getElementById('pos').innerText = `${idx + 1} / ${q.length}`;
-            document.getElementById('pB').style.width = (idx/q.length*100) + '%';
+        
+        const hasKanji = /[\u4e00-\u9faf]/.test(w.word);
+        const progress = Math.round((this.state.current / this.state.words.length) * 100);
+        
+        return `
+          <div class="space-y-6">
+            <div class="flex justify-between items-center text-white mb-2">
+              <button onclick="APP.goHome()" class="text-sm opacity-70 hover:opacity-100">← 返回</button>
+              <div class="text-sm opacity-70">${this.state.current + 1} / ${this.state.words.length}</div>
+            </div>
             
-            document.getElementById('in1').value = ''; document.getElementById('in2').value = '';
-            document.getElementById('in1').disabled = false;
-            document.getElementById('in2').classList.add('hidden');
-            document.getElementById('fB').innerText = '';
-            document.getElementById('mainBtn').innerText = "验证 (Enter)";
-            document.getElementById('mainBtn').className = "w-full bg-indigo-600 text-white font-black py-5 rounded-2xl shadow-lg transition text-lg";
+            <div class="bg-white/10 rounded-full h-2 overflow-hidden">
+              <div class="bg-purple-500 h-full transition-all duration-300" style="width: ${progress}%"></div>
+            </div>
             
-            document.getElementById('in1').placeholder = (mode==='deep' && cur.isK) ? "输入读音" : "输入单词";
-            setTimeout(()=>document.getElementById('in1').focus(), 50);
+            <div class="glass rounded-3xl p-8 text-white">
+              <div class="text-center mb-8">
+                <div class="text-sm opacity-60 mb-2">含义</div>
+                <div class="text-3xl font-bold">${w.meaning}</div>
+              </div>
+              
+              ${this.state.step === 'reading' ? `
+                <div class="space-y-4">
+                  <div class="text-sm opacity-70">请输入读音 (假名)</div>
+                  <input 
+                    type="text" 
+                    id="inputBox"
+                    class="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-3 text-lg text-white placeholder-white/40"
+                    placeholder="ひらがな"
+                    value="${this.state.input}"
+                  >
+                  ${this.state.feedback ? `
+                    <div class="text-center ${this.state.feedback === 'correct' ? 'text-green-400' : 'text-red-400'}">
+                      ${this.state.feedback === 'correct' ? '✓ 正确!' : `✗ 正确答案: ${w.reading}`}
+                    </div>
+                  ` : ''}
+                </div>
+              ` : this.state.step === 'kanji' ? `
+                <div class="space-y-4">
+                  <div class="text-center mb-4">
+                    <div class="text-sm opacity-60">读音</div>
+                    <div class="text-2xl text-green-400">${w.reading}</div>
+                  </div>
+                  <div class="text-sm opacity-70">请输入单词 (汉字/假名)</div>
+                  <input 
+                    type="text" 
+                    id="inputBox"
+                    class="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-3 text-lg text-white placeholder-white/40"
+                    placeholder="漢字"
+                    value="${this.state.input}"
+                  >
+                  ${this.state.feedback ? `
+                    <div class="text-center ${this.state.feedback === 'correct' ? 'text-green-400' : 'text-red-400'}">
+                      ${this.state.feedback === 'correct' ? '✓ 正确!' : `✗ 正确答案: ${w.word}`}
+                    </div>
+                  ` : ''}
+                </div>
+              ` : `
+                <div class="text-center space-y-4">
+                  <div class="text-2xl text-green-400">${w.word}</div>
+                  <div class="text-xl opacity-80">${w.reading}</div>
+                  <button 
+                    id="nextBtn"
+                    class="w-full bg-green-500 hover:bg-green-600 rounded-lg py-3 font-medium transition"
+                  >
+                    下一个 (按 Enter)
+                  </button>
+                </div>
+              `}
+            </div>
+          </div>
+        `;
+      },
+      
+      attachEvents() {
+        const fileInput = document.getElementById('fileInput');
+        if (fileInput) {
+          fileInput.onchange = (e) => this.handleFile(e);
         }
-
-        function ctrl() {
-            if(state === 'next') { load(); return; }
-            const v1 = document.getElementById('in1').value.trim().toLowerCase();
-            const v2 = document.getElementById('in2').value.trim().toLowerCase();
-            const isS2 = !document.getElementById('in2').classList.contains('hidden');
-
-            if(!isS2) {
-                let target = (mode==='deep' && cur.isK) ? cur.rd : cur.w;
-                if(v1 === target.toLowerCase()) {
-                    if(mode==='deep' && cur.isK) {
-                        document.getElementById('in2').classList.remove('hidden');
-                        document.getElementById('in1').disabled = true;
-                        document.getElementById('in2').focus();
-                        msg("✓ 读音正确，写出汉字", "text-indigo-600");
-                    } else { pass(); }
-                } else { fail(target); }
-            } else {
-                if(v2 === cur.w.toLowerCase()) pass(); else fail(cur.w);
+        
+        const inputBox = document.getElementById('inputBox');
+        if (inputBox) {
+          inputBox.focus();
+          inputBox.oninput = (e) => {
+            this.state.input = e.target.value;
+          };
+          inputBox.onkeydown = (e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              this.handleSubmit();
             }
+          };
         }
-
-        function pass() {
-            msg("🎉 正确", "text-emerald-500");
-            state = 'next'; idx++;
-            document.getElementById('mainBtn').innerText = "下一个 (Enter)";
-            document.getElementById('mainBtn').className = "w-full bg-emerald-500 text-white font-black py-5 rounded-2xl shadow-lg transition text-lg";
+        
+        const nextBtn = document.getElementById('nextBtn');
+        if (nextBtn) {
+          nextBtn.onclick = () => this.nextWord();
+          nextBtn.focus();
+          document.onkeydown = (e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              this.nextWord();
+            }
+          };
         }
-
-        function fail(t) {
-            msg(`❌ 错误 (提示: ${t})`, "text-red-500");
-            if(!nb.find(x=>x.w===cur.w)) { nb.unshift(cur); save(); updateUI(); }
+      },
+      
+      handleFile(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        
+        const reader = new FileReader();
+        reader.onload = (evt) => {
+          const data = new Uint8Array(evt.target.result);
+          const workbook = XLSX.read(data, { type: 'array' });
+          const sheet = workbook.Sheets[workbook.SheetNames[0]];
+          const json = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+          
+          this.state.words = json
+            .filter(row => row[0] && row[1] && row[2])
+            .map(row => ({
+              word: String(row[0]).trim(),
+              reading: String(row[1]).trim(),
+              meaning: String(row[2]).trim(),
+              errors: 0
+            }));
+          
+          if (this.state.words.length > 0) {
+            this.state.page = 'train';
+            this.state.current = 0;
+            this.render();
+          }
+        };
+        reader.readAsArrayBuffer(file);
+      },
+      
+      handleSubmit() {
+        const w = this.state.words[this.state.current];
+        const input = this.state.input.trim();
+        
+        if (this.state.step === 'reading') {
+          if (input === w.reading) {
+            this.state.feedback = 'correct';
+            setTimeout(() => {
+              this.state.feedback = '';
+              const hasKanji = /[\u4e00-\u9faf]/.test(w.word);
+              if (hasKanji) {
+                this.state.step = 'kanji';
+                this.state.input = '';
+              } else {
+                this.state.step = 'done';
+              }
+              this.state.progress.studied++;
+              this.state.progress.correct++;
+              this.render();
+            }, 500);
+          } else {
+            this.state.feedback = 'wrong';
+            w.errors = (w.errors || 0) + 1;
+            this.addToNotebook(w);
+            setTimeout(() => {
+              this.state.feedback = '';
+              this.state.step = 'done';
+              this.state.input = '';
+              this.state.progress.studied++;
+              this.render();
+            }, 1500);
+          }
+        } else if (this.state.step === 'kanji') {
+          if (input === w.word) {
+            this.state.feedback = 'correct';
+            this.state.progress.correct++;
+            setTimeout(() => {
+              this.state.feedback = '';
+              this.state.step = 'done';
+              this.state.input = '';
+              this.render();
+            }, 500);
+          } else {
+            this.state.feedback = 'wrong';
+            w.errors = (w.errors || 0) + 1;
+            this.addToNotebook(w);
+            setTimeout(() => {
+              this.state.feedback = '';
+              this.state.step = 'done';
+              this.state.input = '';
+              this.render();
+            }, 1500);
+          }
         }
-
-        function msg(t, c) { const e=document.getElementById('fB'); e.innerText=t; e.className=`text-[11px] font-black mt-4 h-4 ${c}`; }
-
-        function sMode(m) {
-            mode = m;
-            ['mQ','mD','smQ','smD'].forEach(id => {
-                const el = document.getElementById(id);
-                if(el) el.classList.toggle('active-mode', id.toLowerCase().includes(m[0]));
-            });
-            if(cur) load();
+        
+        this.render();
+      },
+      
+      nextWord() {
+        this.state.current++;
+        this.state.step = 'reading';
+        this.state.input = '';
+        this.state.feedback = '';
+        this.saveData();
+        this.render();
+      },
+      
+      addToNotebook(word) {
+        const existing = this.state.notebook.find(w => w.word === word.word);
+        if (!existing) {
+          this.state.notebook.push({ ...word });
+        } else {
+          existing.errors = (existing.errors || 0) + 1;
         }
-
-        function updateUI() {
-            document.getElementById('nC').innerText = nb.length;
-            document.getElementById('sC').innerText = sb.length;
-            render('nbL', nb, 'nb'); render('sbL', sb, 'sb');
+        
+        if (word.errors >= 3 && !this.state.stubborn.find(w => w.word === word.word)) {
+          this.state.stubborn.push({ ...word });
         }
-
-        function render(id, data, t) {
-            const box = document.getElementById(id); box.innerHTML = '';
-            data.forEach((x, i) => {
-                const d = document.createElement('div');
-                d.className = "flex justify-between items-center p-3 bg-slate-50 rounded-xl border";
-                d.innerHTML = `<div><b class='text-sm'>${x.w}</b> <span class='text-[10px] opacity-40'>${x.rd}</span><p class='text-[10px] opacity-60'>${x.m}</p></div>
-                               <button onclick="del(${i},'${t}')" class="text-indigo-600 font-bold text-xs">掌握</button>`;
-                box.appendChild(d);
-            });
+        
+        this.saveData();
+      },
+      
+      startReview() {
+        this.state.words = this.shuffle([...this.state.notebook]);
+        this.state.current = 0;
+        this.state.step = 'reading';
+        this.state.page = 'train';
+        this.render();
+      },
+      
+      startStubborn() {
+        this.state.words = this.shuffle([...this.state.stubborn]);
+        this.state.current = 0;
+        this.state.step = 'reading';
+        this.state.page = 'train';
+        this.render();
+      },
+      
+      shuffle(arr) {
+        for (let i = arr.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [arr[i], arr[j]] = [arr[j], arr[i]];
         }
-
-        function del(i,t) { if(t==='nb') nb.splice(i,1); else sb.splice(i,1); save(); updateUI(); }
-        function save() { localStorage.setItem('gina_nb', JSON.stringify(nb)); }
-        function toggleM(id) { document.getElementById(id).classList.toggle('hidden'); }
-        function quickStart(t) { 
-            let d = (t==='nb')?nb:sb; if(!d.length) return;
-            q = [...d].sort(()=>Math.random()-0.5); idx=0; toggleM(t+'M'); go(); 
-        }
-
-        document.onkeydown = (e) => { if(e.key === 'Enter') ctrl(); };
-    </script>
+        return arr;
+      },
+      
+      goHome() {
+        this.state.page = 'home';
+        this.state.words = [];
+        this.state.current = 0;
+        document.onkeydown = null;
+        this.render();
+      }
+    };
+    
+    APP.init();
+  </script>
 </body>
 </html>
