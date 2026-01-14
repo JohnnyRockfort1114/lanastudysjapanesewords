@@ -3,275 +3,439 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gina's Japanese Drill V2.0</title>
+    <title>日语深度记忆训练 V3.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
-        body { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; background-color: #f8fafc; }
-        .fade-in { animation: fadeIn 0.4s ease-out; }
+        body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #f8fafc; }
+        .fade-in { animation: fadeIn 0.3s ease-in; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .shake { animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both; }
-        @keyframes shake { 10%, 90% { transform: translate3d(-1px, 0, 0); } 20%, 80% { transform: translate3d(2px, 0, 0); } 30%, 50%, 70% { transform: translate3d(-4px, 0, 0); } 40%, 60% { transform: translate3d(4px, 0, 0); } }
+        .hidden-section { display: none; }
     </style>
 </head>
-<body class="flex items-center justify-center min-h-screen text-slate-800">
+<body class="text-slate-800 h-screen flex flex-col">
 
-    <div class="w-full max-w-lg p-6 bg-white rounded-xl shadow-xl m-4 border-t-4 border-indigo-600 fade-in">
+    <nav class="bg-indigo-600 text-white p-4 shadow-md flex justify-between items-center shrink-0">
+        <h1 class="font-bold text-lg tracking-wide">🇯🇵 深度记忆 V3</h1>
+        <div class="space-x-3 text-sm">
+            <button onclick="toggleModal('historyModal')" class="hover:text-indigo-200 transition">📜 历史</button>
+            <button onclick="toggleModal('notebookModal')" class="bg-white text-indigo-600 px-3 py-1 rounded-full font-bold hover:bg-indigo-50 transition shadow">📕 生词本 (<span id="notebookCount">0</span>)</button>
+        </div>
+    </nav>
+
+    <main class="flex-grow flex flex-col items-center justify-center p-4 overflow-y-auto">
         
-        <div class="flex justify-between items-center mb-6">
-            <h1 class="text-xl font-bold text-indigo-700">🇯🇵 深度记忆训练 V2</h1>
-            <span id="progress-text" class="text-xs font-mono text-gray-400">0/0</span>
+        <div id="uploadSection" class="w-full max-w-md bg-white p-8 rounded-2xl shadow-xl text-center fade-in">
+            <div class="mb-6">
+                <div class="mx-auto h-16 w-16 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center mb-4 text-2xl">📂</div>
+                <h2 class="text-2xl font-bold text-slate-700">开始训练</h2>
+                <p class="text-slate-500 mt-2 text-sm">支持多选 Excel 文件，系统自动合并</p>
+            </div>
+            
+            <label class="block w-full cursor-pointer bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-xl transition shadow-lg transform active:scale-95">
+                选择文件 (支持多选)
+                <input type="file" id="fileInput" class="hidden" accept=".xlsx, .xls" multiple />
+            </label>
+            <p class="mt-4 text-xs text-slate-400">Excel格式要求：A列写法 | B列读音 | C列中文</p>
         </div>
 
-        <div id="upload-section" class="text-center py-10">
-            <div class="border-2 border-dashed border-indigo-200 rounded-lg p-8 hover:bg-indigo-50 transition cursor-pointer relative group">
-                <input type="file" id="fileInput" accept=".xlsx, .xls" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onchange="handleFileUpload(event)">
-                <div class="text-indigo-500 group-hover:scale-105 transition-transform">
-                    <p class="text-4xl mb-2">📂</p>
-                    <p class="font-bold">上传 Excel 单词表</p>
-                    <p class="text-xs text-gray-400 mt-2">格式：A列写法 | B列读音 | C列中文</p>
+        <div id="studySection" class="hidden-section w-full max-w-md">
+            <div class="mb-4 flex justify-between text-xs font-bold text-slate-500 px-1">
+                <span>剩余: <span id="remainCount">0</span></span>
+                <span>当前进度</span>
+            </div>
+            <div class="w-full bg-slate-200 rounded-full h-2 mb-6">
+                <div id="progressBar" class="bg-indigo-500 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+            </div>
+
+            <div class="bg-white rounded-2xl shadow-xl overflow-hidden min-h-[400px] flex flex-col relative fade-in">
+                
+                <div class="bg-slate-50 p-6 text-center border-b border-slate-100">
+                    <span class="inline-block px-3 py-1 bg-indigo-100 text-indigo-600 rounded-full text-xs font-bold tracking-wider mb-2">中文含义</span>
+                    <h3 id="questionText" class="text-3xl font-bold text-slate-800 min-h-[48px] flex items-center justify-center">
+                        准备中...
+                    </h3>
+                </div>
+
+                <div class="p-6 flex-grow flex flex-col justify-center space-y-4">
+                    <div id="step1" class="space-y-2">
+                        <label class="text-xs font-bold text-slate-400 uppercase">Step 1: 输入假名 (读音)</label>
+                        <input type="text" id="inputKana" class="w-full border-2 border-slate-200 rounded-xl p-3 text-lg focus:outline-none focus:border-indigo-500 transition text-center placeholder-slate-300" placeholder="例如: わたし" autocomplete="off">
+                    </div>
+
+                    <div id="step2" class="hidden-section space-y-2">
+                        <label class="text-xs font-bold text-slate-400 uppercase">Step 2: 输入日文写法</label>
+                        <input type="text" id="inputKanji" class="w-full border-2 border-slate-200 rounded-xl p-3 text-lg focus:outline-none focus:border-indigo-500 transition text-center placeholder-slate-300" placeholder="例如: 私" autocomplete="off">
+                    </div>
+
+                    <div id="feedback" class="text-center text-sm font-bold min-h-[20px]"></div>
+                </div>
+
+                <div class="p-4 bg-slate-50 border-t border-slate-100">
+                    <button id="btnSubmit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl shadow-md transition transform active:scale-95">
+                        提交 (Enter)
+                    </button>
+                    <button id="btnNext" class="hidden-section w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 rounded-xl shadow-md transition transform active:scale-95">
+                        下一个 (Enter)
+                    </button>
                 </div>
             </div>
         </div>
 
-        <div id="study-section" class="hidden">
-            <div class="flex justify-center mb-4">
-                <span id="step-badge" class="px-3 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-700">
-                    STEP 1: 读音回忆
-                </span>
-            </div>
-
-            <div class="text-center mb-8">
-                <h2 id="meaning-text" class="text-3xl font-extrabold text-slate-800 mb-2"></h2>
-                <p id="hint-text" class="h-6 text-lg text-indigo-600 font-medium"></p> 
-            </div>
-
-            <div class="relative">
-                <input type="text" id="answer-input" 
-                    class="w-full px-4 py-4 text-xl text-center border-2 border-gray-200 rounded-lg focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition shadow-inner bg-gray-50"
-                    placeholder="输入平假名..." autocomplete="off">
-                <p id="feedback-msg" class="absolute -bottom-6 left-0 right-0 text-center text-xs font-bold text-red-500 h-4"></p>
-            </div>
-
-            <div class="mt-8 text-center">
-                <p class="text-xs text-gray-400">按下 <kbd class="font-sans border rounded px-1 bg-gray-100">Enter</kbd> 确认</p>
-            </div>
+        <div id="finishSection" class="hidden-section text-center fade-in bg-white p-8 rounded-2xl shadow-xl max-w-sm">
+            <div class="text-6xl mb-4">🎉</div>
+            <h2 class="text-2xl font-bold text-slate-800 mb-2">本次训练完成！</h2>
+            <p class="text-slate-600 mb-6">所有的责任你都担起来了。保持这个节奏。</p>
+            <button onclick="location.reload()" class="bg-indigo-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-indigo-700 transition">再来一组</button>
         </div>
 
-        <div id="result-section" class="hidden text-center">
-            <h2 class="text-2xl font-bold text-gray-800 mb-4">训练完成</h2>
-            <p class="mb-6 text-gray-500">今日任务已执行完毕。</p>
-            
-            <div class="bg-red-50 rounded-lg p-4 text-left mb-6">
-                <h3 class="font-bold text-red-700 text-sm mb-2">需要强化的生词</h3>
-                <ul id="vocab-list" class="list-disc list-inside text-sm text-red-800 space-y-1 max-h-40 overflow-y-auto"></ul>
-            </div>
-            
-            <button onclick="location.reload()" class="w-full bg-indigo-600 text-white py-3 rounded-lg font-bold hover:bg-indigo-700 transition shadow-lg">
-                开始新一轮
-            </button>
-        </div>
+    </main>
 
+    <div id="notebookModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl w-full max-w-2xl max-h-[80vh] flex flex-col shadow-2xl">
+            <div class="p-4 border-b flex justify-between items-center bg-indigo-50 rounded-t-2xl">
+                <h3 class="font-bold text-lg text-indigo-900">📕 我的生词本 (需重点复习)</h3>
+                <button onclick="toggleModal('notebookModal')" class="text-slate-400 hover:text-slate-600 text-2xl">&times;</button>
+            </div>
+            <div class="p-4 overflow-y-auto flex-grow">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="text-xs text-slate-400 border-b">
+                            <th class="py-2">写法</th>
+                            <th class="py-2">读音</th>
+                            <th class="py-2">含义</th>
+                            <th class="py-2 text-right">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="notebookList" class="text-sm text-slate-700">
+                        </tbody>
+                </table>
+                <div id="emptyNotebookMsg" class="text-center text-slate-400 py-10 hidden">
+                    暂无生词。干得漂亮！
+                </div>
+            </div>
+            <div class="p-4 border-t bg-slate-50 rounded-b-2xl text-right">
+                <button onclick="clearNotebook()" class="text-red-500 text-xs hover:underline mr-4">清空生词本</button>
+                <button onclick="toggleModal('notebookModal')" class="bg-slate-200 text-slate-700 px-4 py-2 rounded-lg text-sm font-bold">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="historyModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl w-full max-w-md max-h-[60vh] flex flex-col shadow-2xl">
+            <div class="p-4 border-b bg-slate-50 rounded-t-2xl">
+                <h3 class="font-bold text-lg text-slate-700">📜 上传历史</h3>
+            </div>
+            <div class="p-4 overflow-y-auto flex-grow">
+                <ul id="historyList" class="space-y-2 text-sm text-slate-600">
+                    </ul>
+                <div id="emptyHistoryMsg" class="text-center text-slate-400 py-6 hidden">暂无记录</div>
+            </div>
+            <div class="p-4 border-t text-center">
+                 <button onclick="toggleModal('historyModal')" class="bg-indigo-600 text-white px-6 py-2 rounded-lg text-sm font-bold">关闭</button>
+            </div>
+        </div>
     </div>
 
     <script>
-        // --- 数据模型与状态 ---
-        let wordList = [];
+        // --- 核心数据 ---
+        let studyQueue = [];
+        let currentWord = null;
+        let totalWords = 0;
         let currentIndex = 0;
-        let currentStep = 1; // 1: Input Kana, 2: Input Surface (Kanji)
-        let stepErrorCount = 0; // 当前步骤的错误计数
-        let vocabBook = JSON.parse(localStorage.getItem('gina_vocab_v2')) || [];
+        let wrongAttempts = 0; // 当前单词的错误次数
 
-        // 判断是否包含汉字 (用于分类)
-        function hasKanji(str) {
-            return /[\u4e00-\u9faf]/.test(str);
-        }
+        // --- 本地存储数据 (LocalStorage) ---
+        // 1. 生词本：存储对象数组 [{kanji, kana, meaning, time}]
+        let vocabNotebook = JSON.parse(localStorage.getItem('gina_vocab_notebook')) || [];
+        // 2. 历史记录：存储文件名数组 ['file1.xlsx', 'file2.xlsx']
+        let uploadHistory = JSON.parse(localStorage.getItem('gina_upload_history')) || [];
 
-        // --- 1. 文件处理 ---
-        function handleFileUpload(event) {
-            const file = event.target.files[0];
-            if (!file) return;
+        // --- 初始化 ---
+        updateNotebookUI();
+        updateHistoryUI();
 
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const data = new Uint8Array(e.target.result);
-                const workbook = XLSX.read(data, {type: 'array'});
-                const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-                const jsonData = XLSX.utils.sheet_to_json(worksheet, {header: 1});
+        // --- 文件处理逻辑 (支持多文件) ---
+        document.getElementById('fileInput').addEventListener('change', async (e) => {
+            const files = e.target.files;
+            if (!files.length) return;
 
-                // 数据清洗与建模
-                wordList = jsonData.filter(row => row.length >= 3).map(row => {
-                    const surface = String(row[0]).trim(); // A列
-                    const kana = String(row[1]).trim();    // B列
-                    const meaning = String(row[2]).trim(); // C列
-                    
-                    // 自动分类：如果有汉字，就是 MIXED；否则是 KANA_ONLY
-                    const type = hasKanji(surface) ? 'MIXED' : 'KANA_ONLY';
-
-                    return { surface, kana, meaning, type };
-                });
-
-                if (wordList.length > 0) {
-                    initStudy();
-                } else {
-                    alert("数据格式错误！请确保Excel有3列数据：A写法，B读音，C中文。");
+            let allData = [];
+            
+            // 遍历所有选中的文件
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                // 记录历史
+                if (!uploadHistory.includes(file.name)) {
+                    uploadHistory.unshift(file.name); // 加到最前面
                 }
-            };
-            reader.readAsArrayBuffer(file);
-        }
+                
+                // 解析文件
+                const data = await parseExcel(file);
+                allData = allData.concat(data);
+            }
 
-        function initStudy() {
-            document.getElementById('upload-section').classList.add('hidden');
-            document.getElementById('study-section').classList.remove('hidden');
-            currentIndex = 0;
-            loadWord();
-        }
+            // 保存历史记录到本地
+            localStorage.setItem('gina_upload_history', JSON.stringify(uploadHistory.slice(0, 50))); // 只存最近50条
+            updateHistoryUI();
 
-        // --- 2. 核心流程控制 ---
-        function loadWord() {
-            if (currentIndex >= wordList.length) {
-                showResults();
+            if (allData.length === 0) {
+                alert("未在文件中找到有效数据，请检查格式 (A:写法, B:读音, C:中文)");
                 return;
             }
 
-            const word = wordList[currentIndex];
-            document.getElementById('progress-text').innerText = `${currentIndex + 1} / ${wordList.length}`;
-            document.getElementById('meaning-text').innerText = word.meaning;
-            document.getElementById('feedback-msg').innerText = '';
-            document.getElementById('hint-text').innerText = ''; // 清空提示
+            // 乱序处理
+            studyQueue = shuffle(allData);
+            totalWords = studyQueue.length;
+            currentIndex = 0;
+
+            // 切换界面
+            document.getElementById('uploadSection').classList.add('hidden-section');
+            document.getElementById('studySection').classList.remove('hidden-section');
             
-            // 重置状态：所有词都从 Step 1 (读音) 开始
-            currentStep = 1;
-            stepErrorCount = 0;
-            
-            updateUIForStep();
-        }
-
-        function updateUIForStep() {
-            const word = wordList[currentIndex];
-            const input = document.getElementById('answer-input');
-            const badge = document.getElementById('step-badge');
-
-            input.value = '';
-            input.focus();
-
-            if (currentStep === 1) {
-                // 步骤一：输入假名
-                badge.className = "px-3 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-700";
-                badge.innerText = "STEP 1: 输入假名读音";
-                input.placeholder = "输入平假名...";
-            } else {
-                // 步骤二：输入写法 (仅针对含汉字词)
-                badge.className = "px-3 py-1 rounded-full text-xs font-bold bg-orange-100 text-orange-700";
-                badge.innerText = "STEP 2: 输入汉字写法";
-                input.placeholder = "根据读音输入汉字...";
-                // 在步骤二时，显示刚刚输入的正确读音作为提示
-                document.getElementById('hint-text').innerText = word.kana; 
-            }
-        }
-
-        // --- 3. 校验逻辑 ---
-        document.getElementById('answer-input').addEventListener('keypress', function (e) {
-            if (e.key === 'Enter') checkAnswer();
+            loadNextWord();
         });
 
+        // 解析 Excel (Promise 封装)
+        function parseExcel(file) {
+            return new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const sheetName = workbook.SheetNames[0];
+                    const sheet = workbook.Sheets[sheetName];
+                    const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+
+                    const parsed = [];
+                    // 从第2行开始（假设第1行是表头）
+                    for (let i = 1; i < jsonData.length; i++) {
+                        const row = jsonData[i];
+                        if (row[0] && row[1]) {
+                            parsed.push({
+                                kanji: row[0].toString().trim(),
+                                kana: row[1].toString().trim(),
+                                meaning: row[2] ? row[2].toString().trim() : ""
+                            });
+                        }
+                    }
+                    resolve(parsed);
+                };
+                reader.readAsArrayBuffer(file);
+            });
+        }
+
+        // --- 背诵逻辑 ---
+        function loadNextWord() {
+            if (currentIndex >= studyQueue.length) {
+                document.getElementById('studySection').classList.add('hidden-section');
+                document.getElementById('finishSection').classList.remove('hidden-section');
+                return;
+            }
+
+            currentWord = studyQueue[currentIndex];
+            wrongAttempts = 0; // 重置错误计数
+
+            // 更新UI
+            document.getElementById('questionText').innerText = currentWord.meaning || "（无中文释义）";
+            document.getElementById('remainCount').innerText = studyQueue.length - currentIndex;
+            const progress = ((currentIndex) / totalWords) * 100;
+            document.getElementById('progressBar').style.width = `${progress}%`;
+
+            // 重置输入框状态
+            document.getElementById('inputKana').value = '';
+            document.getElementById('inputKanji').value = '';
+            document.getElementById('inputKana').disabled = false;
+            document.getElementById('inputKanji').disabled = true;
+            
+            document.getElementById('step1').classList.remove('opacity-50');
+            document.getElementById('step2').classList.add('hidden-section');
+            
+            document.getElementById('feedback').innerText = '';
+            document.getElementById('feedback').className = 'text-center text-sm font-bold min-h-[20px]';
+
+            document.getElementById('btnSubmit').classList.remove('hidden-section');
+            document.getElementById('btnNext').classList.add('hidden-section');
+            
+            document.getElementById('inputKana').focus();
+        }
+
         function checkAnswer() {
-            const input = document.getElementById('answer-input');
-            const userVal = input.value.trim();
-            const word = wordList[currentIndex];
-            let isCorrect = false;
+            const kanaInput = document.getElementById('inputKana').value.trim();
+            const feedbackEl = document.getElementById('feedback');
 
-            // 逻辑分支
-            if (currentStep === 1) {
-                // 校验读音
-                if (userVal === word.kana) isCorrect = true;
-            } else {
-                // 校验写法
-                if (userVal === word.surface) isCorrect = true;
-            }
-
-            if (isCorrect) {
-                handleSuccess(word);
-            } else {
-                handleError(word);
-            }
-        }
-
-        function handleSuccess(word) {
-            // 动画反馈：绿色边框闪烁
-            const input = document.getElementById('answer-input');
-            input.classList.add('border-green-500', 'ring-green-500');
-            setTimeout(() => input.classList.remove('border-green-500', 'ring-green-500'), 300);
-
-            // 流程流转逻辑
-            if (currentStep === 1) {
-                if (word.type === 'MIXED') {
-                    // 混合词：进入第二步
-                    currentStep = 2;
-                    stepErrorCount = 0; // 新步骤，错误计数重置
-                    setTimeout(updateUIForStep, 200); // 稍微延迟让用户感觉到切换
+            // 阶段 1: 检查假名
+            if (!document.getElementById('step2').classList.contains('hidden-section') === false) {
+                if (kanaInput === currentWord.kana) {
+                    // 假名正确，进入第二步
+                    feedbackEl.innerText = "✓ 读音正确，请写出汉字";
+                    feedbackEl.className = "text-center text-sm font-bold min-h-[20px] text-indigo-600";
+                    
+                    document.getElementById('inputKana').disabled = true;
+                    document.getElementById('step1').classList.add('opacity-50');
+                    document.getElementById('step2').classList.remove('hidden-section');
+                    
+                    const kanjiInput = document.getElementById('inputKanji');
+                    kanjiInput.disabled = false;
+                    kanjiInput.focus();
                 } else {
-                    // 纯假名：直接完成
-                    nextWord();
+                    handleWrongAnswer("读音错误");
                 }
+                return;
+            }
+
+            // 阶段 2: 检查汉字
+            const kanjiInput = document.getElementById('inputKanji').value.trim();
+            if (kanjiInput === currentWord.kanji) {
+                // 全部正确
+                feedbackEl.innerText = "🎉 正确！完美执行。";
+                feedbackEl.className = "text-center text-sm font-bold min-h-[20px] text-green-600";
+                document.getElementById('inputKanji').disabled = true;
+                
+                document.getElementById('btnSubmit').classList.add('hidden-section');
+                document.getElementById('btnNext').classList.remove('hidden-section');
+                document.getElementById('btnNext').focus();
             } else {
-                // 第二步完成：直接完成
-                nextWord();
+                handleWrongAnswer("写法错误");
             }
         }
 
-        function handleError(word) {
-            stepErrorCount++;
-            const input = document.getElementById('answer-input');
-            const feedback = document.getElementById('feedback-msg');
+        // 错误处理逻辑
+        function handleWrongAnswer(msg) {
+            wrongAttempts++;
+            const feedbackEl = document.getElementById('feedback');
+            feedbackEl.innerText = `❌ ${msg} (提示: ${wrongAttempts >= 3 ? currentWord.kana + ' / ' + currentWord.kanji : '再试一次'})`;
+            feedbackEl.className = "text-center text-sm font-bold min-h-[20px] text-red-500 animate-pulse";
 
-            // 错误动画
-            input.classList.add('shake', 'border-red-500');
-            setTimeout(() => input.classList.remove('shake', 'border-red-500'), 500);
-
-            input.value = ''; // 清空输入，强制重输
-            feedback.innerText = `错误！再试一次 (${stepErrorCount}/3)`;
-
-            // 错误三次加入生词本
-            if (stepErrorCount >= 3) {
-                addToVocab(word);
-                // 提示正确答案
-                const answer = currentStep === 1 ? word.kana : word.surface;
-                feedback.innerText = `正确答案: ${answer} (已加入生词本)`;
+            // 如果错误达到3次，加入生词本
+            if (wrongAttempts === 3) {
+                addToNotebook(currentWord);
             }
         }
 
-        function nextWord() {
-            currentIndex++;
-            loadWord();
-        }
-
-        // --- 4. 持久化与结果 ---
-        function addToVocab(word) {
-            const exists = vocabBook.find(w => w.surface === word.surface);
+        // --- 生词本逻辑 ---
+        function addToNotebook(word) {
+            // 查重：如果在生词本里就不加了
+            const exists = vocabNotebook.some(item => item.kanji === word.kanji && item.kana === word.kana);
             if (!exists) {
-                vocabBook.push(word);
-                localStorage.setItem('gina_vocab_v2', JSON.stringify(vocabBook));
+                vocabNotebook.unshift(word); // 加到最前面
+                localStorage.setItem('gina_vocab_notebook', JSON.stringify(vocabNotebook));
+                updateNotebookUI();
+                
+                // 视觉反馈：生词本按钮闪烁一下
+                const btn = document.querySelector('button[onclick="toggleModal(\'notebookModal\')"]');
+                btn.classList.add('bg-red-100', 'text-red-600');
+                setTimeout(() => btn.classList.remove('bg-red-100', 'text-red-600'), 500);
             }
         }
 
-        function showResults() {
-            document.getElementById('study-section').classList.add('hidden');
-            document.getElementById('result-section').classList.remove('hidden');
-            
-            const listElem = document.getElementById('vocab-list');
-            listElem.innerHTML = '';
-            
-            if (vocabBook.length === 0) {
-                listElem.innerHTML = '<li class="text-green-600">完美！本次没有触发三次错误的生词。</li>';
+        function updateNotebookUI() {
+            const listEl = document.getElementById('notebookList');
+            const countEl = document.getElementById('notebookCount');
+            const emptyMsg = document.getElementById('emptyNotebookMsg');
+
+            countEl.innerText = vocabNotebook.length;
+            listEl.innerHTML = '';
+
+            if (vocabNotebook.length === 0) {
+                emptyMsg.classList.remove('hidden');
             } else {
-                vocabBook.forEach(w => {
-                    const li = document.createElement('li');
-                    li.textContent = `${w.surface} (${w.kana}) - ${w.meaning}`;
-                    listElem.appendChild(li);
+                emptyMsg.classList.add('hidden');
+                vocabNotebook.forEach((word, index) => {
+                    const row = document.createElement('tr');
+                    row.className = "border-b hover:bg-slate-50 transition";
+                    row.innerHTML = `
+                        <td class="py-2 font-bold text-slate-800">${word.kanji}</td>
+                        <td class="py-2 text-slate-600">${word.kana}</td>
+                        <td class="py-2 text-slate-400 text-xs truncate max-w-[80px]">${word.meaning}</td>
+                        <td class="py-2 text-right">
+                            <button onclick="removeFromNotebook(${index})" class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded hover:bg-green-200">已记熟</button>
+                        </td>
+                    `;
+                    listEl.appendChild(row);
                 });
             }
         }
+
+        function removeFromNotebook(index) {
+            if(confirm('确定这个词已经完全掌握了吗？不要自欺欺人哦。')) {
+                vocabNotebook.splice(index, 1);
+                localStorage.setItem('gina_vocab_notebook', JSON.stringify(vocabNotebook));
+                updateNotebookUI();
+            }
+        }
+
+        function clearNotebook() {
+            if(vocabNotebook.length === 0) return;
+            if(confirm('警告：确定要清空所有生词记录吗？这通常意味着你已经全部通过考试了。')) {
+                vocabNotebook = [];
+                localStorage.setItem('gina_vocab_notebook', JSON.stringify(vocabNotebook));
+                updateNotebookUI();
+            }
+        }
+
+        // --- 历史记录 UI ---
+        function updateHistoryUI() {
+            const listEl = document.getElementById('historyList');
+            const emptyMsg = document.getElementById('emptyHistoryMsg');
+            listEl.innerHTML = '';
+
+            if (uploadHistory.length === 0) {
+                emptyMsg.classList.remove('hidden');
+            } else {
+                emptyMsg.classList.add('hidden');
+                uploadHistory.forEach(name => {
+                    const li = document.createElement('li');
+                    li.className = "flex items-center text-slate-600";
+                    li.innerHTML = `<span class="mr-2 text-indigo-400">🕒</span> ${name}`;
+                    listEl.appendChild(li);
+                });
+            }
+        }
+
+        // --- 工具函数 ---
+        function toggleModal(modalId) {
+            const modal = document.getElementById(modalId);
+            if (modal.classList.contains('hidden')) {
+                modal.classList.remove('hidden');
+            } else {
+                modal.classList.add('hidden');
+            }
+        }
+
+        function shuffle(array) {
+            let currentIndex = array.length, randomIndex;
+            while (currentIndex != 0) {
+                randomIndex = Math.floor(Math.random() * currentIndex);
+                currentIndex--;
+                [array[currentIndex], array[randomIndex]] = [array[randomIndex], array[currentIndex]];
+            }
+            return array;
+        }
+
+        // --- 键盘事件监听 ---
+        document.addEventListener('keydown', function(event) {
+            // 如果生词本或历史记录打开了，按ESC关闭
+            if (event.key === "Escape") {
+                document.getElementById('notebookModal').classList.add('hidden');
+                document.getElementById('historyModal').classList.add('hidden');
+                return;
+            }
+
+            if (document.getElementById('studySection').classList.contains('hidden-section')) return;
+
+            if (event.key === 'Enter') {
+                const btnSubmit = document.getElementById('btnSubmit');
+                const btnNext = document.getElementById('btnNext');
+                
+                if (!btnSubmit.classList.contains('hidden-section')) {
+                    checkAnswer();
+                } else if (!btnNext.classList.contains('hidden-section')) {
+                    loadNextWord();
+                }
+            }
+        });
+
     </script>
 </body>
 </html>
