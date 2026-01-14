@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>日语深度记忆训练 V4.0 (闭环进化版)</title>
+    <title>日语深度记忆训练 V5.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
@@ -11,16 +11,21 @@
         .fade-in { animation: fadeIn 0.3s ease-in; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .hidden-section { display: none; }
+        .correct-flash { animation: flashGreen 0.5s; }
+        @keyframes flashGreen { 0% { background: white; } 50% { background: #dcfce7; } 100% { background: white; } }
     </style>
 </head>
 <body class="text-slate-800 h-screen flex flex-col">
 
     <nav class="bg-indigo-600 text-white p-4 shadow-md flex justify-between items-center shrink-0">
-        <h1 class="font-bold text-lg tracking-wide">🇯🇵 深度记忆 V4.0</h1>
-        <div class="space-x-2 text-sm flex">
-            <button onclick="toggleModal('historyModal')" class="hover:text-indigo-200 transition px-2">📜 历史</button>
-            <button onclick="toggleModal('stubbornModal')" class="bg-slate-800 text-white px-3 py-1 rounded-full font-bold hover:bg-slate-700 transition shadow border border-slate-600">☠️ 顽固 (<span id="stubbornCountNav">0</span>)</button>
-            <button onclick="toggleModal('notebookModal')" class="bg-white text-indigo-600 px-3 py-1 rounded-full font-bold hover:bg-indigo-50 transition shadow">📕 生词 (<span id="notebookCountNav">0</span>)</button>
+        <h1 class="font-bold text-lg tracking-wide">🇯🇵 深度记忆 V5.0</h1>
+        <div class="flex items-center space-x-2 text-sm">
+            <select id="modeSelector" onchange="changeMode()" class="bg-indigo-700 text-white px-2 py-1 rounded-lg border-none focus:ring-0 cursor-pointer">
+                <option value="deep">深度模式 (中→日)</option>
+                <option value="recall">回想模式 (日→中)</option>
+            </select>
+            <button onclick="toggleModal('stubbornModal')" class="bg-slate-800 px-3 py-1 rounded-full font-bold">☠️ <span id="stubbornCountNav">0</span></button>
+            <button onclick="toggleModal('notebookModal')" class="bg-white text-indigo-600 px-3 py-1 rounded-full font-bold">📕 <span id="notebookCountNav">0</span></button>
         </div>
     </nav>
 
@@ -30,209 +35,198 @@
             <div class="mb-6">
                 <div class="mx-auto h-16 w-16 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center mb-4 text-2xl">📂</div>
                 <h2 class="text-2xl font-bold text-slate-700">开始训练</h2>
-                <p class="text-slate-500 mt-2 text-sm">支持导出生词 -> 重新上传复习</p>
+                <p class="text-slate-500 mt-2 text-sm">纠错补丁已启用：自动记住你的手动修改</p>
             </div>
             
             <div id="resumeBox" class="hidden-section mb-6 p-4 bg-amber-50 border border-amber-200 rounded-xl text-left">
-                <p class="text-xs font-bold text-amber-700 mb-2">上次未完成：</p>
                 <p id="resumeInfo" class="text-xs text-amber-600 mb-3"></p>
                 <div class="flex space-x-2">
-                    <button onclick="resumeStudy()" class="flex-1 bg-amber-500 text-white text-xs py-2 rounded-lg font-bold">继续</button>
-                    <button onclick="clearSavedProgress()" class="flex-1 bg-slate-200 text-slate-600 text-xs py-2 rounded-lg font-bold">放弃</button>
+                    <button onclick="resumeStudy()" class="flex-1 bg-amber-500 text-white text-xs py-2 rounded-lg font-bold shadow">继续上次</button>
+                    <button onclick="clearSavedProgress()" class="flex-1 bg-slate-200 text-slate-600 text-xs py-2 rounded-lg font-bold">重新开始</button>
                 </div>
             </div>
 
-            <label class="block w-full cursor-pointer bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-xl transition shadow-lg transform active:scale-95">
-                选择文件
+            <label class="block w-full cursor-pointer bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 rounded-xl transition shadow-lg transform active:scale-95">
+                选择 Excel 文件
                 <input type="file" id="fileInput" class="hidden" accept=".xlsx, .xls" multiple />
             </label>
         </div>
 
         <div id="studySection" class="hidden-section w-full max-w-md">
-            <div class="mb-4 flex justify-between text-xs font-bold text-slate-500 px-1">
-                <span>位置: <span id="remainCount">0</span> / <span id="totalCount">0</span></span>
-                <span><span id="percentText">0%</span></span>
+            <div class="mb-4 flex justify-between text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">
+                <span>POS: <span id="remainCount">0</span>/<span id="totalCount">0</span></span>
+                <span id="percentText">0%</span>
             </div>
-            <div class="w-full bg-slate-200 rounded-full h-2 mb-6">
-                <div id="progressBar" class="bg-indigo-500 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+            <div class="w-full bg-slate-200 rounded-full h-1.5 mb-6">
+                <div id="progressBar" class="bg-indigo-500 h-1.5 rounded-full transition-all duration-500" style="width: 0%"></div>
             </div>
 
-            <div class="bg-white rounded-2xl shadow-xl overflow-hidden min-h-[400px] flex flex-col relative fade-in">
-                <div id="modeBanner" class="hidden-section bg-amber-100 text-amber-800 text-xs font-bold text-center py-1">
-                    ⚔️ 错题复习模式：再错将进入顽固生词本
+            <div id="cardMain" class="bg-white rounded-3xl shadow-2xl overflow-hidden min-h-[420px] flex flex-col relative fade-in">
+                <button onclick="openEditModal()" class="absolute top-4 right-4 text-slate-300 hover:text-indigo-500 p-2 transition">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                </button>
+
+                <div class="bg-slate-50 p-8 text-center border-b border-slate-100">
+                    <span id="modeLabel" class="inline-block px-3 py-1 bg-indigo-100 text-indigo-600 rounded-full text-[10px] font-bold tracking-widest mb-3 uppercase">MEANING</span>
+                    <h3 id="questionText" class="text-3xl font-bold text-slate-800 leading-tight">...</h3>
                 </div>
 
-                <div class="bg-slate-50 p-6 text-center border-b border-slate-100">
-                    <span class="inline-block px-3 py-1 bg-indigo-100 text-indigo-600 rounded-full text-xs font-bold tracking-wider mb-2">中文含义</span>
-                    <h3 id="questionText" class="text-3xl font-bold text-slate-800 min-h-[48px] flex items-center justify-center">...</h3>
-                </div>
-
-                <div class="p-6 flex-grow flex flex-col justify-center space-y-4">
-                    <div id="step1" class="space-y-2">
-                        <label class="text-xs font-bold text-slate-400 uppercase">Step 1: 读音</label>
-                        <input type="text" id="inputKana" class="w-full border-2 border-slate-200 rounded-xl p-3 text-lg focus:outline-none focus:border-indigo-500 transition text-center" autocomplete="off">
+                <div class="p-8 flex-grow flex flex-col justify-center space-y-5">
+                    <div id="deepInputs" class="space-y-4">
+                        <div id="step1" class="transition-all">
+                            <input type="text" id="inputKana" class="w-full border-b-2 border-slate-200 p-2 text-xl focus:outline-none focus:border-indigo-500 text-center placeholder-slate-300" placeholder="输入假名..." autocomplete="off">
+                        </div>
+                        <div id="step2" class="hidden-section transition-all">
+                            <input type="text" id="inputKanji" class="w-full border-b-2 border-slate-200 p-2 text-xl focus:outline-none focus:border-indigo-500 text-center placeholder-slate-300" placeholder="输入写法..." autocomplete="off">
+                        </div>
                     </div>
-                    <div id="step2" class="hidden-section space-y-2">
-                        <label class="text-xs font-bold text-slate-400 uppercase">Step 2: 写法</label>
-                        <input type="text" id="inputKanji" class="w-full border-2 border-slate-200 rounded-xl p-3 text-lg focus:outline-none focus:border-indigo-500 transition text-center" autocomplete="off">
+                    
+                    <div id="recallInputs" class="hidden-section space-y-4">
+                        <input type="text" id="inputMeaning" class="w-full border-b-2 border-slate-200 p-2 text-xl focus:outline-none focus:border-indigo-500 text-center placeholder-slate-300" placeholder="输入中文意思..." autocomplete="off">
+                        <p class="text-[10px] text-center text-slate-400">匹配关键词或按 Enter 揭晓</p>
                     </div>
-                    <div id="feedback" class="text-center text-sm font-bold min-h-[24px]"></div>
+
+                    <div id="feedback" class="text-center text-sm font-bold min-h-[20px] transition-colors"></div>
                 </div>
 
-                <div class="p-4 bg-slate-50 border-t border-slate-100 flex space-x-2">
-                    <button id="btnSubmit" onclick="checkAnswer()" class="flex-grow bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl shadow-md transition transform active:scale-95">提交 (Enter)</button>
-                    <button id="btnNext" onclick="loadNextWord()" class="hidden-section flex-grow bg-green-500 hover:bg-green-600 text-white font-bold py-3 rounded-xl shadow-md transition transform active:scale-95">下一个 (Enter)</button>
+                <div class="p-6 bg-slate-50 flex space-x-3">
+                    <button id="btnSubmit" onclick="checkAnswer()" class="flex-grow bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 rounded-2xl shadow-lg transition transform active:scale-95">提交 (Enter)</button>
+                    <button id="btnNext" onclick="loadNextWord()" class="hidden-section flex-grow bg-green-500 hover:bg-green-600 text-white font-bold py-4 rounded-2xl shadow-lg transition">下一个 (Enter)</button>
                 </div>
             </div>
         </div>
 
-        <div id="finishSection" class="hidden-section w-full max-w-md bg-white p-8 rounded-2xl shadow-xl text-center fade-in">
-            <div class="text-6xl mb-4">🎉</div>
-            <h2 class="text-2xl font-bold text-slate-800 mb-2">本轮任务完成！</h2>
-            <p class="text-slate-500 mb-6 text-sm">错题已自动收录。接下来怎么做？</p>
-            
+        <div id="finishSection" class="hidden-section w-full max-w-md bg-white p-10 rounded-3xl shadow-2xl text-center fade-in">
+            <div class="text-7xl mb-6">🏆</div>
+            <h2 class="text-3xl font-black text-slate-800 mb-2">执行完毕</h2>
+            <p class="text-slate-500 mb-8">本次错题: <span id="sessionMistakeCount" class="text-red-500 font-bold">0</span></p>
             <div class="space-y-3">
-                <button id="btnReviewMistakes" onclick="startReviewMistakes()" class="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 rounded-xl shadow-md transition">
-                    ⚔️ 立即复习本次错题 (<span id="sessionMistakeCount">0</span>)
-                </button>
-                <button onclick="restartCurrentSet()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl shadow-md transition">
-                    🔄 本组单词再刷一遍
-                </button>
-                <button onclick="location.reload()" class="w-full bg-slate-200 hover:bg-slate-300 text-slate-600 font-bold py-3 rounded-xl shadow-md transition">
-                    📂 上传新的文件
-                </button>
+                <button id="btnReviewMistakes" onclick="startReviewMistakes()" class="w-full bg-amber-500 text-white font-bold py-4 rounded-2xl shadow-md transition hover:bg-amber-600">⚔️ 立即复习错题</button>
+                <button onclick="restartCurrentSet()" class="w-full bg-indigo-600 text-white font-bold py-4 rounded-2xl shadow-md transition hover:bg-indigo-700">🔄 原样再来一遍</button>
+                <button onclick="location.reload()" class="w-full bg-slate-100 text-slate-600 font-bold py-4 rounded-2xl transition hover:bg-slate-200">📂 结束并返回</button>
             </div>
         </div>
     </main>
 
-    <div id="notebookModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-        <div class="bg-white rounded-2xl w-full max-w-2xl max-h-[80vh] flex flex-col shadow-2xl">
-            <div class="p-4 border-b flex justify-between items-center bg-indigo-50 rounded-t-2xl"><h3 class="font-bold text-lg text-indigo-900">📕 生词本 (错误收录)</h3><button onclick="toggleModal('notebookModal')" class="text-slate-400 text-2xl">&times;</button></div>
-            <div class="p-4 overflow-y-auto flex-grow"><table class="w-full text-left"><tbody id="notebookList" class="text-sm"></tbody></table><div id="emptyNotebookMsg" class="text-center text-slate-400 py-10 hidden">暂无生词。</div></div>
-            <div class="p-4 border-t bg-slate-50 flex justify-between">
-                <button onclick="exportExcel(vocabNotebook, '我的生词本')" class="text-indigo-600 font-bold text-sm hover:underline">📥 导出Excel</button>
-                <div>
-                    <button onclick="clearNotebook('normal')" class="text-red-500 text-xs mr-4 hover:underline">清空</button>
-                    <button onclick="toggleModal('notebookModal')" class="bg-slate-200 px-4 py-2 rounded-lg text-sm font-bold">关闭</button>
-                </div>
+    <div id="editModal" class="hidden fixed inset-0 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
+        <div class="bg-white rounded-3xl w-full max-w-sm p-8 shadow-2xl">
+            <h3 class="font-bold text-xl mb-6 text-slate-800 flex items-center">✏️ 纠正词条</h3>
+            <div class="space-y-4">
+                <div><label class="text-[10px] font-bold text-slate-400 uppercase">写法</label><input id="editKanji" class="w-full border-2 border-slate-100 rounded-xl p-3 mt-1"></div>
+                <div><label class="text-[10px] font-bold text-slate-400 uppercase">假名</label><input id="editKana" class="w-full border-2 border-slate-100 rounded-xl p-3 mt-1"></div>
+                <div><label class="text-[10px] font-bold text-slate-400 uppercase">中文</label><input id="editMeaning" class="w-full border-2 border-slate-100 rounded-xl p-3 mt-1"></div>
+            </div>
+            <div class="flex space-x-3 mt-8">
+                <button onclick="saveEdit()" class="flex-1 bg-indigo-600 text-white py-3 rounded-xl font-bold shadow-indigo-200 shadow-lg">保存修改</button>
+                <button onclick="toggleModal('editModal')" class="flex-1 bg-slate-100 text-slate-500 py-3 rounded-xl font-bold">取消</button>
             </div>
         </div>
     </div>
 
-    <div id="stubbornModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-        <div class="bg-white rounded-2xl w-full max-w-2xl max-h-[80vh] flex flex-col shadow-2xl border-2 border-slate-700">
-            <div class="p-4 border-b flex justify-between items-center bg-slate-800 text-white rounded-t-xl"><h3 class="font-bold text-lg">☠️ 顽固生词 (重点打击)</h3><button onclick="toggleModal('stubbornModal')" class="text-slate-400 text-2xl">&times;</button></div>
-            <div class="p-4 overflow-y-auto flex-grow"><table class="w-full text-left"><tbody id="stubbornList" class="text-sm"></tbody></table><div id="emptyStubbornMsg" class="text-center text-slate-400 py-10 hidden">暂无顽固生词。</div></div>
-            <div class="p-4 border-t bg-slate-50 flex justify-between">
-                <button onclick="exportExcel(stubbornNotebook, '顽固生词本')" class="text-slate-800 font-bold text-sm hover:underline">📥 导出Excel</button>
-                <div>
-                    <button onclick="clearNotebook('stubborn')" class="text-red-500 text-xs mr-4 hover:underline">清空</button>
-                    <button onclick="toggleModal('stubbornModal')" class="bg-slate-200 px-4 py-2 rounded-lg text-sm font-bold">关闭</button>
-                </div>
-            </div>
+    <div id="notebookModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-3xl w-full max-w-2xl max-h-[80vh] flex flex-col shadow-2xl">
+            <div class="p-6 border-b flex justify-between items-center bg-indigo-50 rounded-t-3xl"><h3 class="font-bold text-lg">📕 生词本</h3><button onclick="toggleModal('notebookModal')" class="text-slate-400 text-2xl">&times;</button></div>
+            <div class="p-4 overflow-y-auto flex-grow"><table class="w-full text-left"><tbody id="notebookList" class="text-sm"></tbody></table></div>
+            <div class="p-4 border-t bg-slate-50 flex justify-between"><button onclick="exportExcel(vocabNotebook, '生词本')" class="text-indigo-600 font-bold">📥 导出Excel</button><button onclick="toggleModal('notebookModal')" class="bg-slate-200 px-4 py-2 rounded-lg font-bold">关闭</button></div>
         </div>
     </div>
 
-    <div id="historyModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-        <div class="bg-white rounded-2xl w-full max-w-md max-h-[60vh] flex flex-col shadow-2xl">
-            <div class="p-4 border-b bg-slate-50 rounded-t-2xl"><h3 class="font-bold text-lg text-slate-700">📜 上传历史</h3></div>
-            <div class="p-4 overflow-y-auto flex-grow"><ul id="historyList" class="space-y-2 text-sm text-slate-600"></ul></div>
-            <div class="p-4 border-t text-center"><button onclick="toggleModal('historyModal')" class="bg-indigo-600 text-white px-6 py-2 rounded-lg text-sm font-bold">关闭</button></div>
+    <div id="stubbornModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-3xl w-full max-w-2xl max-h-[80vh] flex flex-col shadow-2xl border-4 border-slate-800">
+            <div class="p-6 border-b bg-slate-800 text-white rounded-t-2xl flex justify-between"><h3>☠️ 顽固分子</h3><button onclick="toggleModal('stubbornModal')">&times;</button></div>
+            <div class="p-4 overflow-y-auto flex-grow"><table class="w-full text-left"><tbody id="stubbornList" class="text-sm"></tbody></table></div>
+            <div class="p-4 border-t bg-slate-50 flex justify-between"><button onclick="exportExcel(stubbornNotebook, '顽固本')" class="text-slate-800 font-bold">📥 导出Excel</button><button onclick="toggleModal('stubbornModal')" class="bg-slate-200 px-4 py-2 rounded-lg font-bold">关闭</button></div>
         </div>
     </div>
 
     <script>
-        // --- 核心数据 ---
+        // --- 核心变量 ---
         let studyQueue = [];
-        let originalQueue = []; // 用于"再刷一遍"
-        let currentSessionMistakes = []; // 本次会话的错题，用于结算页面的"复习错题"
+        let originalQueue = [];
+        let currentSessionMistakes = [];
         let currentWord = null;
         let totalWords = 0;
         let currentIndex = 0;
         let wrongAttempts = 0;
-        let isReviewMode = false; // 是否处于"复习错题"模式
+        let isReviewMode = false;
+        let currentMode = 'deep'; // 'deep' or 'recall'
+
+        // --- 纠错补丁库 ---
+        let wordPatches = JSON.parse(localStorage.getItem('gina_word_patches')) || {};
 
         // --- 持久化数据 ---
         let vocabNotebook = JSON.parse(localStorage.getItem('gina_vocab_notebook')) || [];
         let stubbornNotebook = JSON.parse(localStorage.getItem('gina_stubborn_notebook')) || [];
         let uploadHistory = JSON.parse(localStorage.getItem('gina_upload_history')) || [];
 
-        // --- 初始化 ---
-        updateNotebookUI();
-        updateStubbornUI();
-        updateHistoryUI();
-        checkSavedProgress();
+        updateNotebookUI(); updateStubbornUI(); checkSavedProgress();
 
-        // --- 工具函数 ---
+        // --- 逻辑函数 ---
         function normalize(str) {
             if (!str) return "";
             return str.toString().trim().replace(/[ー－—–-]/g, '-').replace(/\s+/g, '').toLowerCase();
         }
 
-        function shuffle(a) { 
-            let arr = [...a];
-            for (let i = arr.length - 1; i > 0; i--) { 
-                const j = Math.floor(Math.random() * (i + 1)); 
-                [arr[i], arr[j]] = [arr[j], arr[i]]; 
-            } 
-            return arr; 
-        }
-
         function toggleModal(id) { document.getElementById(id).classList.toggle('hidden'); }
 
-        // --- 存档与恢复逻辑 ---
-        function checkSavedProgress() {
-            const savedData = localStorage.getItem('gina_study_snapshot');
-            if (savedData) {
-                const snapshot = JSON.parse(savedData);
-                document.getElementById('resumeBox').classList.remove('hidden-section');
-                document.getElementById('resumeInfo').innerText = `包含 ${snapshot.queue.length} 个词，进度: ${snapshot.index}`;
-            }
+        function changeMode() {
+            currentMode = document.getElementById('modeSelector').value;
+            if (studyQueue.length > 0) loadNextWord();
         }
 
-        function resumeStudy() {
-            const snapshot = JSON.parse(localStorage.getItem('gina_study_snapshot'));
-            studyQueue = snapshot.queue;
-            originalQueue = [...snapshot.queue]; // 简易处理，恢复时默认原队列即当前队列
-            currentIndex = snapshot.index;
-            totalWords = studyQueue.length;
-            currentSessionMistakes = []; // 恢复时不保留旧的会话错题记录，重新计算
-            startStudy();
+        // --- 纠错逻辑 ---
+        function openEditModal() {
+            if (!currentWord) return;
+            document.getElementById('editKanji').value = currentWord.kanji;
+            document.getElementById('editKana').value = currentWord.kana;
+            document.getElementById('editMeaning').value = currentWord.meaning;
+            toggleModal('editModal');
         }
 
-        function clearSavedProgress() {
-            localStorage.removeItem('gina_study_snapshot');
-            document.getElementById('resumeBox').classList.add('hidden-section');
-        }
+        function saveEdit() {
+            const newKanji = document.getElementById('editKanji').value.trim();
+            const newKana = document.getElementById('editKana').value.trim();
+            const newMeaning = document.getElementById('editMeaning').value.trim();
+            
+            // 存入补丁库 (以原始写法为 key)
+            const patchKey = currentWord.originalKanji || currentWord.kanji;
+            wordPatches[patchKey] = { kanji: newKanji, kana: newKana, meaning: newMeaning };
+            localStorage.setItem('gina_word_patches', JSON.stringify(wordPatches));
 
-        function saveSnapshot() {
-            // 复习模式不存档，避免逻辑复杂
-            if (isReviewMode) return;
-            const snapshot = { queue: studyQueue, index: currentIndex };
-            localStorage.setItem('gina_study_snapshot', JSON.stringify(snapshot));
+            // 更新当前队列
+            currentWord.kanji = newKanji;
+            currentWord.kana = newKana;
+            currentWord.meaning = newMeaning;
+            
+            toggleModal('editModal');
+            loadNextWord(); // 重新刷新显示
         }
 
         // --- 文件处理 ---
         document.getElementById('fileInput').addEventListener('change', async (e) => {
-            const files = e.target.files;
-            if (!files.length) return;
+            const files = e.target.files; if (!files.length) return;
             let allData = [];
-            for (let i = 0; i < files.length; i++) {
-                const file = files[i];
-                if (!uploadHistory.includes(file.name)) uploadHistory.unshift(file.name);
+            for (let file of files) {
                 const data = await parseExcel(file);
                 allData = allData.concat(data);
             }
-            localStorage.setItem('gina_upload_history', JSON.stringify(uploadHistory.slice(0, 50)));
-            updateHistoryUI();
+            if (!allData.length) return;
             
-            if (allData.length === 0) return;
-            
-            originalQueue = [...allData]; // 保存原始数据供重置使用
+            // 应用纠错补丁
+            allData = allData.map(w => {
+                const patch = wordPatches[w.kanji];
+                if (patch) {
+                    return { ...w, ...patch, originalKanji: w.kanji };
+                }
+                return w;
+            });
+
+            originalQueue = [...allData];
             studyQueue = shuffle(allData);
             totalWords = studyQueue.length;
             currentIndex = 0;
-            currentSessionMistakes = [];
             isReviewMode = false;
             startStudy();
         });
@@ -243,96 +237,114 @@
                 reader.onload = (e) => {
                     const data = new Uint8Array(e.target.result);
                     const workbook = XLSX.read(data, { type: 'array' });
-                    let allSheetData = [];
-                    workbook.SheetNames.forEach(name => {
-                        const sheet = workbook.Sheets[name];
-                        const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
-                        for (let i = 1; i < jsonData.length; i++) {
-                            const row = jsonData[i];
-                            if (row[0] && row[1]) {
-                                allSheetData.push({
-                                    kanji: row[0].toString().trim(),
-                                    kana: row[1].toString().trim(),
-                                    meaning: row[2] ? row[2].toString().trim() : ""
-                                });
-                            }
+                    let list = [];
+                    workbook.SheetNames.forEach(n => {
+                        const json = XLSX.utils.sheet_to_json(workbook.Sheets[n], { header: 1 });
+                        for (let i = 1; i < json.length; i++) {
+                            if (json[i][0] && json[i][1]) list.push({ kanji: String(json[i][0]).trim(), kana: String(json[i][1]).trim(), meaning: String(json[i][2] || "").trim() });
                         }
                     });
-                    resolve(allSheetData);
+                    resolve(list);
                 };
                 reader.readAsArrayBuffer(file);
             });
         }
 
-        // --- 核心流程 ---
         function startStudy() {
             document.getElementById('uploadSection').classList.add('hidden-section');
             document.getElementById('finishSection').classList.add('hidden-section');
             document.getElementById('studySection').classList.remove('hidden-section');
             document.getElementById('totalCount').innerText = totalWords;
-            
-            // UI 状态显示
-            const modeBanner = document.getElementById('modeBanner');
-            if (isReviewMode) modeBanner.classList.remove('hidden-section');
-            else modeBanner.classList.add('hidden-section');
-
             loadNextWord();
         }
 
         function loadNextWord() {
-            // 结束判断
-            if (currentIndex >= studyQueue.length) {
-                showFinishScreen();
-                return;
-            }
-
+            if (currentIndex >= studyQueue.length) { showFinishScreen(); return; }
             currentWord = studyQueue[currentIndex];
             wrongAttempts = 0;
             saveSnapshot();
 
-            // UI 更新
-            document.getElementById('questionText').innerText = currentWord.meaning || "（无中文）";
+            // UI 初始化
             document.getElementById('remainCount').innerText = currentIndex + 1;
             const progress = (currentIndex / totalWords) * 100;
             document.getElementById('progressBar').style.width = `${progress}%`;
             document.getElementById('percentText').innerText = `${Math.round(progress)}%`;
-
-            // 输入框重置
-            document.getElementById('inputKana').value = '';
-            document.getElementById('inputKanji').value = '';
-            document.getElementById('inputKana').disabled = false;
-            document.getElementById('inputKanji').disabled = true;
-            document.getElementById('step1').classList.remove('opacity-50');
-            document.getElementById('step2').classList.add('hidden-section');
             document.getElementById('feedback').innerText = '';
             document.getElementById('btnSubmit').classList.remove('hidden-section');
             document.getElementById('btnNext').classList.add('hidden-section');
-            setTimeout(() => document.getElementById('inputKana').focus(), 50);
+
+            const deepInputs = document.getElementById('deepInputs');
+            const recallInputs = document.getElementById('recallInputs');
+            const modeLabel = document.getElementById('modeLabel');
+
+            if (currentMode === 'deep') {
+                modeLabel.innerText = "MEANING";
+                document.getElementById('questionText').innerText = currentWord.meaning;
+                deepInputs.classList.remove('hidden-section');
+                recallInputs.classList.add('hidden-section');
+                document.getElementById('inputKana').value = '';
+                document.getElementById('inputKanji').value = '';
+                document.getElementById('inputKana').disabled = false;
+                document.getElementById('step2').classList.add('hidden-section');
+                document.getElementById('step1').classList.remove('opacity-50');
+                setTimeout(() => document.getElementById('inputKana').focus(), 50);
+            } else {
+                modeLabel.innerText = "WORD";
+                document.getElementById('questionText').innerText = `${currentWord.kanji}\n(${currentWord.kana})`;
+                deepInputs.classList.add('hidden-section');
+                recallInputs.classList.remove('hidden-section');
+                document.getElementById('inputMeaning').value = '';
+                setTimeout(() => document.getElementById('inputMeaning').focus(), 50);
+            }
         }
 
         function checkAnswer() {
-            const step2Visible = !document.getElementById('step2').classList.contains('hidden-section');
-            if (!step2Visible) {
-                if (normalize(document.getElementById('inputKana').value) === normalize(currentWord.kana)) {
-                    document.getElementById('inputKana').disabled = true;
-                    document.getElementById('step1').classList.add('opacity-50');
-                    document.getElementById('step2').classList.remove('hidden-section');
-                    document.getElementById('inputKanji').disabled = false;
-                    document.getElementById('inputKanji').focus();
-                    document.getElementById('feedback').innerText = "✓ 读音正确";
-                    document.getElementById('feedback').className = "text-center text-sm font-bold text-indigo-600";
-                } else { handleWrong("读音错误"); }
+            const feedbackEl = document.getElementById('feedback');
+            
+            if (currentMode === 'deep') {
+                const step2Visible = !document.getElementById('step2').classList.contains('hidden-section');
+                if (!step2Visible) {
+                    if (normalize(document.getElementById('inputKana').value) === normalize(currentWord.kana)) {
+                        document.getElementById('inputKana').disabled = true;
+                        document.getElementById('step1').classList.add('opacity-50');
+                        document.getElementById('step2').classList.remove('hidden-section');
+                        document.getElementById('inputKanji').disabled = false;
+                        document.getElementById('inputKanji').focus();
+                        feedbackEl.innerText = "✓ 读音正确";
+                        feedbackEl.className = "text-center text-sm font-bold text-indigo-600";
+                    } else { handleWrong("读音不匹配"); }
+                } else {
+                    if (normalize(document.getElementById('inputKanji').value) === normalize(currentWord.kanji)) {
+                        passWord();
+                    } else { handleWrong("写法不匹配"); }
+                }
             } else {
-                if (normalize(document.getElementById('inputKanji').value) === normalize(currentWord.kanji)) {
-                    document.getElementById('inputKanji').disabled = true;
-                    currentIndex++; 
-                    saveSnapshot();
-                    document.getElementById('btnSubmit').classList.add('hidden-section');
-                    document.getElementById('btnNext').classList.remove('hidden-section').focus();
-                    document.getElementById('feedback').innerText = "🎉 正确！";
-                    document.getElementById('feedback').className = "text-center text-sm font-bold text-green-600";
-                } else { handleWrong("写法错误"); }
+                // 回想模式：模糊匹配关键词
+                const input = document.getElementById('inputMeaning').value.trim();
+                if (input && (currentWord.meaning.includes(input) || input.includes(currentWord.meaning))) {
+                    passWord();
+                } else {
+                    // 如果没匹配到，展示答案让用户自我判断（按 Enter 两次即可跳过）
+                    if (wrongAttempts === 0) {
+                        feedbackEl.innerText = `提示: ${currentWord.meaning}`;
+                        feedbackEl.className = "text-center text-sm font-bold text-amber-500";
+                        wrongAttempts++;
+                    } else {
+                        passWord(); // 第二次直接通过，认为用户已确认
+                    }
+                }
             }
+        }
+
+        function passWord() {
+            document.getElementById('cardMain').classList.add('correct-flash');
+            setTimeout(() => document.getElementById('cardMain').classList.remove('correct-flash'), 500);
+            document.getElementById('feedback').innerText = "🎉 正确";
+            document.getElementById('feedback').className = "text-center text-sm font-bold text-green-600";
+            currentIndex++;
+            saveSnapshot();
+            document.getElementById('btnSubmit').classList.add('hidden-section');
+            document.getElementById('btnNext').classList.remove('hidden-section').focus();
         }
 
         function handleWrong(m) {
@@ -340,24 +352,15 @@
             const f = document.getElementById('feedback');
             f.innerText = `❌ ${m} (${wrongAttempts >= 3 ? currentWord.kana + ' / ' + currentWord.kanji : '再试一次'})`;
             f.className = "text-center text-sm font-bold text-red-500 animate-pulse";
-            
-            // 错误处理逻辑
             if (wrongAttempts === 3) {
-                // 1. 记录到当前会话错题本 (用于结算页面的复习)
-                if (!currentSessionMistakes.some(w => w.kanji === currentWord.kanji)) {
-                    currentSessionMistakes.push(currentWord);
-                }
-
-                // 2. 区分模式录入永久生词本
+                if (!currentSessionMistakes.some(w => w.kanji === currentWord.kanji)) currentSessionMistakes.push(currentWord);
                 if (isReviewMode) {
-                    // 如果是在复习模式下又错了 -> 进顽固生词本
                     if (!stubbornNotebook.some(i => i.kanji === currentWord.kanji)) {
                         stubbornNotebook.unshift(currentWord);
                         localStorage.setItem('gina_stubborn_notebook', JSON.stringify(stubbornNotebook));
                         updateStubbornUI();
                     }
                 } else {
-                    // 普通模式 -> 进普通生词本
                     if (!vocabNotebook.some(i => i.kanji === currentWord.kanji)) {
                         vocabNotebook.unshift(currentWord);
                         localStorage.setItem('gina_vocab_notebook', JSON.stringify(vocabNotebook));
@@ -367,137 +370,71 @@
             }
         }
 
-        // --- 结算页面逻辑 ---
+        // --- 其他支持函数 (存档/显示/导出等) ---
         function showFinishScreen() {
             document.getElementById('studySection').classList.add('hidden-section');
             document.getElementById('finishSection').classList.remove('hidden-section');
-            
-            // 如果是普通模式完成，清除存档
+            document.getElementById('sessionMistakeCount').innerText = currentSessionMistakes.length;
             if (!isReviewMode) clearSavedProgress();
-
-            // 更新错题复习按钮状态
-            const btnReview = document.getElementById('btnReviewMistakes');
-            const countSpan = document.getElementById('sessionMistakeCount');
-            countSpan.innerText = currentSessionMistakes.length;
-            
-            if (currentSessionMistakes.length > 0) {
-                btnReview.disabled = false;
-                btnReview.classList.remove('opacity-50', 'cursor-not-allowed');
-                btnReview.innerText = `⚔️ 立即复习本次错题 (${currentSessionMistakes.length})`;
-            } else {
-                btnReview.disabled = true;
-                btnReview.classList.add('opacity-50', 'cursor-not-allowed');
-                btnReview.innerText = `👍 本次全对，无须复习`;
-            }
         }
 
         function restartCurrentSet() {
-            studyQueue = shuffle([...originalQueue]); // 重置为原始队列并乱序
-            currentIndex = 0;
-            totalWords = studyQueue.length;
-            currentSessionMistakes = [];
-            isReviewMode = false;
+            studyQueue = shuffle([...originalQueue]);
+            currentIndex = 0; totalWords = studyQueue.length;
+            currentSessionMistakes = []; isReviewMode = false;
             startStudy();
         }
 
         function startReviewMistakes() {
-            if (currentSessionMistakes.length === 0) return;
-            studyQueue = shuffle([...currentSessionMistakes]); // 只背错题
-            currentIndex = 0;
-            totalWords = studyQueue.length;
-            // 清空本次错题记录，准备在复习模式下记录"顽固错误"
-            // 注意：这里我们不清除 originalQueue，但复习模式结束后通常建议重新选文件或重置
-            isReviewMode = true; 
-            startStudy();
+            if (!currentSessionMistakes.length) return;
+            studyQueue = shuffle([...currentSessionMistakes]);
+            currentIndex = 0; totalWords = studyQueue.length;
+            isReviewMode = true; startStudy();
         }
 
-        // --- 生词本与导出逻辑 ---
-        function updateNotebookUI() {
-            renderList('notebookList', vocabNotebook, 'notebookCountNav', 'emptyNotebookMsg', 'normal');
+        function updateNotebookUI() { renderList('notebookList', vocabNotebook, 'notebookCountNav', 'normal'); }
+        function updateStubbornUI() { renderList('stubbornList', stubbornNotebook, 'stubbornCountNav', 'stubborn'); }
+        function renderList(id, data, navId, type) {
+            document.getElementById(navId).innerText = data.length;
+            const el = document.getElementById(id); el.innerHTML = '';
+            data.forEach((w, i) => {
+                const r = document.createElement('tr'); r.className = "border-b text-xs";
+                r.innerHTML = `<td class="py-3 font-bold">${w.kanji}</td><td class="px-2">${w.kana}</td><td>${w.meaning}</td><td class="text-right"><button onclick="removeNB(${i}, '${type}')" class="text-indigo-600 font-bold">掌握</button></td>`;
+                el.appendChild(r);
+            });
         }
-
-        function updateStubbornUI() {
-            renderList('stubbornList', stubbornNotebook, 'stubbornCountNav', 'emptyStubbornMsg', 'stubborn');
+        function removeNB(i, t) {
+            if (t === 'normal') { vocabNotebook.splice(i, 1); localStorage.setItem('gina_vocab_notebook', JSON.stringify(vocabNotebook)); updateNotebookUI(); }
+            else { stubbornNotebook.splice(i, 1); localStorage.setItem('gina_stubborn_notebook', JSON.stringify(stubbornNotebook)); updateStubbornUI(); }
         }
-
-        function renderList(listId, data, countId, msgId, type) {
-            const list = document.getElementById(listId);
-            document.getElementById(countId).innerText = data.length;
-            list.innerHTML = '';
-            if (data.length === 0) document.getElementById(msgId).classList.remove('hidden');
-            else {
-                document.getElementById(msgId).classList.add('hidden');
-                data.forEach((w, i) => {
-                    const r = document.createElement('tr');
-                    r.className = "border-b text-xs";
-                    const btnClass = type === 'stubborn' ? "text-red-600" : "text-indigo-600";
-                    r.innerHTML = `<td class="py-2 font-bold">${w.kanji}</td><td class="px-2">${w.kana}</td><td>${w.meaning}</td><td class="text-right"><button onclick="removeNB(${i}, '${type}')" class="${btnClass} font-bold">已斩杀</button></td>`;
-                    list.appendChild(r);
-                });
+        function exportExcel(data, name) {
+            const ws = XLSX.utils.aoa_to_sheet(data.map(w => [w.kanji, w.kana, w.meaning]));
+            const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Words");
+            XLSX.writeFile(wb, `${name}.xlsx`);
+        }
+        function saveSnapshot() { if (!isReviewMode && studyQueue.length) localStorage.setItem('gina_study_snapshot', JSON.stringify({ queue: studyQueue, index: currentIndex })); }
+        function checkSavedProgress() {
+            const s = localStorage.getItem('gina_study_snapshot');
+            if (s) {
+                const data = JSON.parse(s);
+                document.getElementById('resumeBox').classList.remove('hidden-section');
+                document.getElementById('resumeInfo').innerText = `发现未完进度: ${data.index}/${data.queue.length}`;
             }
         }
-
-        function removeNB(i, type) {
-            if (!confirm('确定已经完全掌握了吗？')) return;
-            if (type === 'normal') {
-                vocabNotebook.splice(i, 1);
-                localStorage.setItem('gina_vocab_notebook', JSON.stringify(vocabNotebook));
-                updateNotebookUI();
-            } else {
-                stubbornNotebook.splice(i, 1);
-                localStorage.setItem('gina_stubborn_notebook', JSON.stringify(stubbornNotebook));
-                updateStubbornUI();
-            }
-        }
-
-        function clearNotebook(type) {
-            if (!confirm('确定清空所有记录？')) return;
-            if (type === 'normal') {
-                vocabNotebook = [];
-                localStorage.setItem('gina_vocab_notebook', JSON.stringify(vocabNotebook));
-                updateNotebookUI();
-            } else {
-                stubbornNotebook = [];
-                localStorage.setItem('gina_stubborn_notebook', JSON.stringify(stubbornNotebook));
-                updateStubbornUI();
-            }
-        }
-
-        // --- 导出功能 (Excel) ---
-        function exportExcel(data, filename) {
-            if (data.length === 0) { alert("生词本为空，无法导出！"); return; }
-            
-            // 转换为数组格式 [[kanji, kana, meaning], ...]
-            const sheetData = data.map(w => [w.kanji, w.kana, w.meaning]);
-            
-            // 创建 Worksheet
-            const ws = XLSX.utils.aoa_to_sheet(sheetData);
-            const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, "Words");
-            
-            // 导出文件
-            XLSX.writeFile(wb, `${filename}_${new Date().toISOString().slice(0,10)}.xlsx`);
-        }
-
-        function updateHistoryUI() {
-            const list = document.getElementById('historyList');
-            list.innerHTML = '';
-            if (!uploadHistory.length) list.innerHTML = '<li class="text-center text-slate-400">暂无</li>';
-            else uploadHistory.forEach(h => { const li = document.createElement('li'); li.innerHTML = `📜 ${h}`; list.appendChild(li); });
-        }
+        function resumeStudy() { const s = JSON.parse(localStorage.getItem('gina_study_snapshot')); studyQueue = s.queue; currentIndex = s.index; totalWords = studyQueue.length; startStudy(); }
+        function clearSavedProgress() { localStorage.removeItem('gina_study_snapshot'); document.getElementById('resumeBox').classList.add('hidden-section'); }
+        function shuffle(a) { let r = [...a]; for (let i = r.length - 1; i > 0; i--) { let j = Math.floor(Math.random() * (i + 1)); [r[i], r[j]] = [r[j], r[i]]; } return r; }
+        function updateHistoryUI() {} // 简化版暂不更新历史列表
 
         document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') { 
-                document.getElementById('notebookModal').classList.add('hidden'); 
-                document.getElementById('historyModal').classList.add('hidden');
-                document.getElementById('stubbornModal').classList.add('hidden');
-            }
             if (e.key === 'Enter') {
-                if (document.getElementById('studySection').classList.contains('hidden-section')) return;
-                const btnSubmit = document.getElementById('btnSubmit');
-                if (!btnSubmit.classList.contains('hidden-section')) { checkAnswer(); e.preventDefault(); }
-                else if (!document.getElementById('btnNext').classList.contains('hidden-section')) { loadNextWord(); e.preventDefault(); }
+                if (!document.getElementById('studySection').classList.contains('hidden-section')) {
+                    const btnSubmit = document.getElementById('btnSubmit');
+                    if (!btnSubmit.classList.contains('hidden-section')) { checkAnswer(); e.preventDefault(); }
+                    else { loadNextWord(); e.preventDefault(); }
+                }
             }
+            if (e.key === 'Escape') toggleModal('editModal');
         });
     </script>
 </body>
