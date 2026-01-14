@@ -2,14 +2,15 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>G-COMMANDER V6.1 | FINAL</title>
+    <title>G-COMMANDER V6.3 | 终极整合版</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
-        body { font-family: 'Inter', -apple-system, sans-serif; background: #f0f2f5; }
-        .glass { background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); }
-        .hidden-section { display: none !important; }
-        .active-btn { background: #4f46e5 !important; color: white !important; }
+        body { font-family: 'Inter', system-ui, -apple-system, sans-serif; background: #f8fafc; }
+        .glass { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.2); }
+        .hidden { display: none !important; }
+        .active-mode { background: #4f46e5 !important; color: white !important; }
+        .card-shadow { box-shadow: 0 20px 50px -12px rgba(79, 70, 229, 0.2); }
     </style>
 </head>
 <body class="text-slate-800 h-screen flex flex-col overflow-hidden">
@@ -17,297 +18,224 @@
     <nav class="bg-indigo-600 text-white p-4 shadow-xl flex justify-between items-center z-50">
         <div class="flex items-center space-x-3">
             <span class="font-black text-2xl tracking-tighter cursor-pointer" onclick="location.reload()">G-COMMANDER</span>
-            <span class="text-[10px] bg-indigo-500 px-2 py-0.5 rounded-full font-bold">V6.1 FINAL</span>
+            <span class="text-[10px] bg-indigo-500 px-2 py-0.5 rounded-full font-bold">V6.3 FINAL</span>
         </div>
         <div class="flex space-x-6 text-sm font-black">
-            <button onclick="toggleModal('sbModal')" class="hover:text-indigo-200">☠️ 顽固 <span id="navSb" class="bg-slate-800 px-1.5 rounded ml-1">0</span></button>
-            <button onclick="toggleModal('nbModal')" class="hover:text-indigo-200">📕 生词 <span id="navNb" class="bg-white text-indigo-600 px-1.5 rounded ml-1">0</span></button>
+            <button onclick="toggleM('sbM')" class="hover:text-indigo-200 transition">☠️ 顽固 <span id="sC" class="bg-slate-800 px-1.5 rounded ml-1">0</span></button>
+            <button onclick="toggleM('nbM')" class="hover:text-indigo-200 transition">📕 生词 <span id="nC" class="bg-white text-indigo-600 px-1.5 rounded ml-1">0</span></button>
         </div>
     </nav>
 
     <main class="flex-grow overflow-y-auto p-6 md:p-12 flex flex-col items-center">
         
-        <div id="homeSection" class="w-full max-w-5xl space-y-8">
+        <div id="hS" class="w-full max-w-5xl space-y-8 animate-in fade-in duration-500">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div class="bg-gradient-to-br from-indigo-600 to-purple-700 p-10 rounded-[3rem] text-white shadow-2xl flex flex-col justify-between border-b-8 border-indigo-800">
-                    <div>
-                        <p class="text-[10px] font-black opacity-60 uppercase tracking-widest mb-1">JLPT 2026 Battle</p>
-                        <div class="text-8xl font-black mb-6" id="countdown">---</div>
-                        <p class="text-sm italic border-l-2 border-indigo-400 pl-4 py-1" id="motto">"执行目标，而不是一直在计划。"</p>
+                <div class="bg-gradient-to-br from-indigo-600 to-purple-700 p-10 rounded-[3rem] text-white card-shadow flex flex-col justify-between border-b-8 border-indigo-800 relative overflow-hidden">
+                    <div class="relative z-10">
+                        <p class="text-[10px] font-black opacity-60 uppercase tracking-widest mb-1">JLPT 2026 Countdown</p>
+                        <div class="text-8xl font-black mb-6" id="cD">--</div>
+                        <p class="text-sm italic border-l-2 border-indigo-400 pl-4 py-1" id="mT">"担得起责任二字。"</p>
                     </div>
-                    <div class="mt-8 bg-black/20 p-4 rounded-2xl">
+                    <div class="mt-8 bg-black/20 p-5 rounded-2xl relative z-10">
                         <p class="text-[10px] font-black mb-1 uppercase text-indigo-200">今日理性建议</p>
-                        <p id="todayTip" class="text-xs font-bold leading-relaxed">屏蔽情绪误导，用理性来看待所有事情。</p>
+                        <p id="tT" class="text-xs font-bold leading-relaxed">屏蔽情绪误导，用理性来看待所有事情。</p>
                     </div>
+                    <div class="absolute -right-10 -bottom-10 text-[12rem] opacity-10 font-black rotate-12">G</div>
                 </div>
 
-                <div class="bg-white p-10 rounded-[3rem] shadow-xl border border-slate-100 flex flex-col">
+                <div class="bg-white p-10 rounded-[3rem] shadow-xl border border-slate-100 flex flex-col justify-center">
                     <h3 class="font-black text-xl mb-6">配置任务环境</h3>
                     
                     <div class="mb-6 space-y-3">
-                        <label class="text-[10px] font-black text-slate-400 uppercase">训练强度</label>
+                        <label class="text-[10px] font-black text-slate-400 uppercase">选择训练模式</label>
                         <div class="flex space-x-2">
-                            <button id="modeQuick" onclick="setMode('quick')" class="flex-1 py-3 rounded-xl font-bold text-sm bg-slate-100 transition">极速模式</button>
-                            <button id="modeDeep" onclick="setMode('deep')" class="flex-1 py-3 rounded-xl font-bold text-sm bg-slate-100 transition">深度模式</button>
+                            <button id="mQ" onclick="sMode('quick')" class="flex-1 py-3 rounded-xl font-bold text-sm bg-slate-100 transition">极速模式</button>
+                            <button id="mD" onclick="sMode('deep')" class="flex-1 py-3 rounded-xl font-bold text-sm bg-slate-100 transition">深度模式</button>
                         </div>
                     </div>
 
-                    <div id="resumeBox" class="hidden-section mb-6 p-4 bg-amber-50 border border-amber-100 rounded-2xl flex justify-between items-center">
-                        <span id="resumeInfo" class="text-[10px] font-black text-amber-600">发现未完成进度</span>
-                        <button onclick="resumeStudy()" class="text-[10px] font-black bg-amber-500 text-white px-3 py-1.5 rounded-lg">继续执行</button>
-                    </div>
-
-                    <label class="flex-grow flex flex-col items-center justify-center border-4 border-dashed border-slate-100 rounded-[2.5rem] hover:border-indigo-400 transition cursor-pointer p-8">
-                        <input type="file" id="fileInput" class="hidden" accept=".xlsx, .xls" />
-                        <span class="text-5xl mb-3">📂</span>
-                        <span class="font-black text-slate-800">导入 805 词表</span>
+                    <label class="flex-grow flex flex-col items-center justify-center border-4 border-dashed border-slate-100 rounded-[2.5rem] hover:border-indigo-400 transition cursor-pointer p-8 group">
+                        <input type="file" id="fI" class="hidden" accept=".xlsx, .xls" />
+                        <span class="text-5xl mb-3 group-hover:scale-110 transition">📂</span>
+                        <span class="font-black text-slate-800">导入 A:词 B:读音 C:含义</span>
+                        <p class="text-[9px] text-slate-400 mt-2 font-bold uppercase">支持 805 核心词表格式</p>
                     </label>
                 </div>
             </div>
         </div>
 
-        <div id="studySection" class="hidden-section w-full max-w-xl">
+        <div id="sS" class="hidden w-full max-w-xl animate-in zoom-in duration-300">
             <div class="flex justify-between items-center mb-6">
-                <button onclick="location.reload()" class="bg-white px-4 py-2 rounded-xl shadow-sm text-[10px] font-black text-slate-500">← 返回大本营</button>
-                <div id="studyModeIndicator" class="text-[10px] font-black bg-indigo-100 text-indigo-600 px-3 py-1 rounded-full uppercase">深度模式</div>
+                <button onclick="location.reload()" class="bg-white px-4 py-2 rounded-xl shadow-sm text-[10px] font-black text-slate-500 hover:text-indigo-600">← 返回首页</button>
+                <div class="flex space-x-2">
+                    <button id="smQ" onclick="sMode('quick')" class="px-3 py-1 text-[10px] font-bold rounded-lg bg-slate-200">极速</button>
+                    <button id="smD" onclick="sMode('deep')" class="px-3 py-1 text-[10px] font-bold rounded-lg bg-slate-200">深度</button>
+                </div>
             </div>
 
-            <div class="bg-white rounded-[3.5rem] shadow-2xl min-h-[500px] flex flex-col relative border border-slate-100 overflow-hidden">
-                <div id="progressBar" class="absolute top-0 left-0 h-2 bg-indigo-500 transition-all duration-500" style="width: 0%"></div>
+            <div class="bg-white rounded-[3.5rem] shadow-2xl min-h-[500px] flex flex-col relative border border-slate-50 overflow-hidden">
+                <div id="pB" class="absolute top-0 left-0 h-2 bg-indigo-500 transition-all duration-500" style="width: 0%"></div>
                 
                 <div class="p-12 text-center flex-grow flex flex-col justify-center">
-                    <p id="counterText" class="text-[10px] font-black text-slate-300 mb-4 tracking-widest">0 / 0</p>
-                    <h2 id="questionText" class="text-5xl font-black text-slate-800 mb-12 leading-tight">...</h2>
+                    <p id="pos" class="text-[10px] font-black text-slate-300 mb-4 tracking-widest">0 / 0</p>
+                    <h2 id="qT" class="text-4xl md:text-5xl font-black text-slate-800 mb-12 leading-tight">加载中...</h2>
 
                     <div class="space-y-6 max-w-xs mx-auto w-full">
-                        <input type="text" id="input1" class="w-full border-b-4 border-slate-100 py-3 text-3xl focus:outline-none focus:border-indigo-500 text-center font-bold" placeholder="..." autocomplete="off">
-                        <input type="text" id="input2" class="hidden-section w-full border-b-4 border-slate-100 py-3 text-3xl focus:outline-none focus:border-indigo-500 text-center font-bold" placeholder="输入汉字" autocomplete="off">
-                        <p id="feedback" class="text-[11px] font-black mt-4 h-4"></p>
+                        <input type="text" id="in1" class="w-full border-b-4 border-slate-100 py-3 text-3xl focus:outline-none focus:border-indigo-500 text-center font-bold" placeholder="..." autocomplete="off">
+                        <input type="text" id="in2" class="hidden w-full border-b-4 border-slate-100 py-3 text-3xl focus:outline-none focus:border-indigo-500 text-center font-bold" placeholder="输入汉字" autocomplete="off">
+                        <p id="fB" class="text-[11px] font-black mt-4 h-4"></p>
                     </div>
                 </div>
 
-                <div class="p-8 bg-slate-50 flex space-x-4">
-                    <button id="btnSubmit" onclick="handleAction()" class="flex-grow bg-indigo-600 text-white font-black py-5 rounded-2xl shadow-lg active:scale-95 transition text-lg">验证 (Enter)</button>
-                    <button id="btnNext" onclick="loadNextWord()" class="hidden-section flex-grow bg-emerald-500 text-white font-black py-5 rounded-2xl shadow-lg transition text-lg">下一个 (Enter)</button>
+                <div class="p-8 bg-slate-50">
+                    <button id="mainBtn" onclick="ctrl()" class="w-full bg-indigo-600 text-white font-black py-5 rounded-2xl shadow-lg active:scale-95 transition text-lg">验证 (Enter)</button>
                 </div>
             </div>
         </div>
-
-        <div id="finishSection" class="hidden-section w-full max-w-md bg-white p-12 rounded-[3.5rem] shadow-2xl text-center">
-            <div class="text-7xl mb-6">🏆</div>
-            <h2 class="text-3xl font-black mb-8">今天的任务已达成</h2>
-            <button onclick="location.reload()" class="w-full bg-indigo-600 text-white font-black py-4 rounded-2xl">返回首页</button>
-        </div>
     </main>
 
-    <div id="nbModal" class="hidden-section fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center z-[100] p-4">
-        <div class="bg-white rounded-[2.5rem] w-full max-w-2xl max-h-[80vh] flex flex-col shadow-2xl overflow-hidden">
-            <div class="p-6 bg-slate-50 border-b flex justify-between items-center">
-                <h3 class="font-black text-xl">📕 Gina 的生词资产</h3>
-                <button onclick="toggleModal('nbModal')" class="text-2xl font-black">&times;</button>
-            </div>
-            <div id="nbList" class="p-4 overflow-y-auto flex-grow space-y-2"></div>
-            <div class="p-6 border-t bg-slate-50 flex space-x-3">
-                <button onclick="startInstant('nb')" class="flex-grow bg-indigo-600 text-white font-black py-4 rounded-2xl shadow-lg">⚔️ 突击复习生词</button>
-                <button onclick="exportExcel()" class="bg-white border text-indigo-600 font-black px-6 rounded-2xl">导出备份</button>
-            </div>
+    <div id="nbM" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center z-[100] p-4">
+        <div class="bg-white rounded-[2.5rem] w-full max-w-xl max-h-[80vh] flex flex-col shadow-2xl overflow-hidden">
+            <div class="p-6 bg-slate-50 border-b flex justify-between font-black"><span>📕 生词资产</span><button onclick="toggleM('nbM')">✕</button></div>
+            <div id="nbL" class="p-4 overflow-y-auto flex-grow space-y-2"></div>
+            <div class="p-6 border-t bg-slate-50"><button onclick="quickStart('nb')" class="w-full bg-indigo-600 text-white font-black py-4 rounded-2xl shadow-lg">⚔️ 开始突击复习</button></div>
         </div>
     </div>
 
-    <div id="sbModal" class="hidden-section fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center z-[100] p-4">
-        <div class="bg-white rounded-[2.5rem] w-full max-w-2xl max-h-[80vh] flex flex-col shadow-2xl overflow-hidden border-4 border-slate-800">
-            <div class="p-6 bg-slate-800 text-white flex justify-between items-center">
-                <h3 class="font-black text-xl">☠️ 顽固记忆点</h3>
-                <button onclick="toggleModal('sbModal')" class="text-2xl font-black">&times;</button>
-            </div>
-            <div id="sbList" class="p-4 overflow-y-auto flex-grow space-y-2"></div>
-            <div class="p-6 bg-slate-100"><button onclick="startInstant('sb')" class="w-full bg-slate-800 text-white font-black py-4 rounded-2xl">⚔️ 立即清剿</button></div>
+    <div id="sbM" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center z-[100] p-4">
+        <div class="bg-white rounded-[2.5rem] w-full max-w-xl max-h-[80vh] flex flex-col border-4 border-slate-800 overflow-hidden shadow-2xl">
+            <div class="p-6 bg-slate-800 text-white flex justify-between font-black"><span>☠️ 顽固记忆</span><button onclick="toggleM('sbM')">✕</button></div>
+            <div id="sbL" class="p-4 overflow-y-auto flex-grow space-y-2"></div>
+            <div class="p-6 bg-slate-100"><button onclick="quickStart('sb')" class="w-full bg-slate-800 text-white font-black py-4 rounded-2xl shadow-lg">⚔️ 立即清剿</button></div>
         </div>
     </div>
 
     <script>
-        let studyQueue = [], currentIndex = 0, currentWord = null, studyMode = 'deep';
-        
-        // 数据兼容：尝试读取所有已知的 key
-        let vocabNotebook = JSON.parse(localStorage.getItem('gina_vocab_notebook')) || 
-                            JSON.parse(localStorage.getItem('gina_nb')) || [];
-        let stubbornNotebook = JSON.parse(localStorage.getItem('gina_stubborn_notebook')) || 
-                               JSON.parse(localStorage.getItem('gina_sb')) || [];
-
+        let q = [], idx = 0, cur = null, mode = 'deep', state = 'input';
+        let nb = JSON.parse(localStorage.getItem('gina_nb')) || JSON.parse(localStorage.getItem('gina_vocab_notebook')) || [];
+        let sb = JSON.parse(localStorage.getItem('gina_sb')) || JSON.parse(localStorage.getItem('gina_stubborn_notebook')) || [];
         const tips = ["执行目标，而不是一直在计划目标。", "先难后易，解决问题。", "屏蔽情绪的误导，用理性看待。", "担得起责任二字。", "不要自卑。"];
 
         window.onload = () => {
-            const days = Math.ceil((new Date('2026-07-05') - new Date()) / (1000*60*60*24));
-            document.getElementById('countdown').innerText = days > 0 ? days : "GO!";
-            document.getElementById('motto').innerText = tips[Math.floor(Math.random()*tips.length)];
-            document.getElementById('todayTip').innerText = tips[Math.floor(Math.random()*tips.length)];
-            updateUI();
-            checkResume();
-            setMode('deep');
+            const d = Math.ceil((new Date('2026-07-05') - new Date()) / (1000*60*60*24));
+            document.getElementById('cD').innerText = d > 0 ? d : "GO!";
+            document.getElementById('mT').innerText = tips[Math.floor(Math.random()*tips.length)];
+            document.getElementById('tT').innerText = tips[Math.floor(Math.random()*tips.length)];
+            updateUI(); sMode('deep');
         };
 
-        // --- 核心：文件处理 ---
-        document.getElementById('fileInput').addEventListener('change', function(e) {
-            const file = e.target.files[0]; if(!file) return;
-            const reader = new FileReader();
-            reader.onload = function(ev) {
-                const workbook = XLSX.read(new Uint8Array(ev.target.result), {type: 'array'});
-                const rows = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], {header: 1});
-                studyQueue = rows.slice(1).map(row => {
-                    let w = String(row[0]||"").trim(), r = String(row[1]||"").trim(), m = String(row[2]||"").trim();
+        // 文件上传
+        document.getElementById('fI').onchange = (e) => {
+            const r = new FileReader();
+            r.onload = (ev) => {
+                const data = XLSX.utils.sheet_to_json(XLSX.read(new Uint8Array(ev.target.result), {type:'array'}).Sheets[XLSX.read(new Uint8Array(ev.target.result), {type:'array'}).SheetNames[0]], {header:1});
+                q = data.slice(1).map(r => {
+                    let w=String(r[0]||"").trim(), rd=String(r[1]||"").trim(), m=String(r[2]||"").trim();
                     if(!w) return null;
-                    let isK = /[\u4E00-\u9FAF]/.test(w);
-                    return { word: w, reading: isK ? r : w, meaning: m || r, isKanji: isK };
-                }).filter(i => i);
-                if(studyQueue.length) { 
-                    studyQueue.sort(() => Math.random() - 0.5);
-                    currentIndex = 0; startStudy(); 
-                }
+                    return { w, rd: /[\u4E00-\u9FAF]/.test(w)?rd:w, m: m||rd, isK: /[\u4E00-\u9FAF]/.test(w) };
+                }).filter(x => x);
+                if(q.length) { q.sort(()=>Math.random()-0.5); idx=0; go(); }
             };
-            reader.readAsArrayBuffer(file);
-        });
+            r.readAsArrayBuffer(e.target.files[0]);
+        };
 
-        function setMode(m) {
-            studyMode = m;
-            document.getElementById('modeQuick').className = (m === 'quick' ? 'active-btn' : 'bg-slate-100') + ' flex-1 py-3 rounded-xl font-bold text-sm transition';
-            document.getElementById('modeDeep').className = (m === 'deep' ? 'active-btn' : 'bg-slate-100') + ' flex-1 py-3 rounded-xl font-bold text-sm transition';
-            document.getElementById('studyModeIndicator').innerText = (m === 'deep' ? '深度模式' : '极速模式');
-            if(currentWord) updateInputUI();
+        function go() {
+            document.getElementById('hS').classList.add('hidden');
+            document.getElementById('sS').classList.remove('hidden');
+            load();
         }
 
-        function startStudy() {
-            document.getElementById('homeSection').classList.add('hidden-section');
-            document.getElementById('studySection').classList.remove('hidden-section');
-            loadNextWord();
-        }
-
-        function loadNextWord() {
-            if (currentIndex >= studyQueue.length) { showFinish(); return; }
-            currentWord = studyQueue[currentIndex];
+        function load() {
+            if(idx >= q.length) { 
+                document.getElementById('sS').innerHTML = "<div class='bg-white p-12 rounded-[3.5rem] text-center shadow-2xl'><div class='text-6xl mb-6'>🎯</div><h2 class='text-2xl font-black mb-6'>执行完毕！</h2><button onclick='location.reload()' class='bg-indigo-600 text-white px-10 py-3 rounded-2xl font-black'>回到首页</button></div>";
+                return; 
+            }
+            cur = q[idx]; state = 'input';
+            document.getElementById('qT').innerText = cur.m;
+            document.getElementById('pos').innerText = `${idx + 1} / ${q.length}`;
+            document.getElementById('pB').style.width = (idx/q.length*100) + '%';
             
-            document.getElementById('questionText').innerText = currentWord.meaning;
-            document.getElementById('counterText').innerText = `${currentIndex + 1} / ${studyQueue.length}`;
-            document.getElementById('progressBar').style.width = `${(currentIndex/studyQueue.length)*100}%`;
+            document.getElementById('in1').value = ''; document.getElementById('in2').value = '';
+            document.getElementById('in1').disabled = false;
+            document.getElementById('in2').classList.add('hidden');
+            document.getElementById('fB').innerText = '';
+            document.getElementById('mainBtn').innerText = "验证 (Enter)";
+            document.getElementById('mainBtn').className = "w-full bg-indigo-600 text-white font-black py-5 rounded-2xl shadow-lg transition text-lg";
             
-            updateInputUI();
-            document.getElementById('feedback').innerText = '';
-            document.getElementById('btnSubmit').classList.remove('hidden-section');
-            document.getElementById('btnNext').classList.add('hidden-section');
-            setTimeout(() => document.getElementById('input1').focus(), 50);
-            
-            localStorage.setItem('gina_v61_snap', JSON.stringify({q: studyQueue, i: currentIndex, m: studyMode}));
+            document.getElementById('in1').placeholder = (mode==='deep' && cur.isK) ? "输入读音" : "输入单词";
+            setTimeout(()=>document.getElementById('in1').focus(), 50);
         }
 
-        function updateInputUI() {
-            document.getElementById('input1').value = '';
-            document.getElementById('input2').value = '';
-            document.getElementById('input1').disabled = false;
-            document.getElementById('input2').classList.add('hidden-section');
-            document.getElementById('input1').placeholder = (studyMode === 'deep' && currentWord.isKanji) ? "输入读音 (假名)" : "输入拼写";
-        }
+        function ctrl() {
+            if(state === 'next') { load(); return; }
+            const v1 = document.getElementById('in1').value.trim().toLowerCase();
+            const v2 = document.getElementById('in2').value.trim().toLowerCase();
+            const isS2 = !document.getElementById('in2').classList.contains('hidden');
 
-        function handleAction() {
-            const v1 = document.getElementById('input1').value.trim().toLowerCase();
-            const v2 = document.getElementById('input2').value.trim().toLowerCase();
-            const isStep2 = !document.getElementById('input2').classList.contains('hidden-section');
-
-            if (!isStep2) {
-                let target = (studyMode === 'deep' && currentWord.isKanji) ? currentWord.reading : currentWord.word;
-                if (v1 === target.toLowerCase()) {
-                    if (studyMode === 'deep' && currentWord.isKanji) {
-                        document.getElementById('input2').classList.remove('hidden-section');
-                        document.getElementById('input1').disabled = true;
-                        document.getElementById('input2').focus();
-                    } else { win(); }
+            if(!isS2) {
+                let target = (mode==='deep' && cur.isK) ? cur.rd : cur.w;
+                if(v1 === target.toLowerCase()) {
+                    if(mode==='deep' && cur.isK) {
+                        document.getElementById('in2').classList.remove('hidden');
+                        document.getElementById('in1').disabled = true;
+                        document.getElementById('in2').focus();
+                        msg("✓ 读音正确，写出汉字", "text-indigo-600");
+                    } else { pass(); }
                 } else { fail(target); }
             } else {
-                if (v2 === currentWord.word.toLowerCase()) { win(); } else { fail(currentWord.word); }
+                if(v2 === cur.w.toLowerCase()) pass(); else fail(cur.w);
             }
         }
 
-        function win() {
-            document.getElementById('feedback').innerText = "✓ 执行正确";
-            document.getElementById('feedback').className = "text-[11px] font-black mt-4 text-emerald-500";
-            document.getElementById('btnSubmit').classList.add('hidden-section');
-            document.getElementById('btnNext').classList.remove('hidden-section').focus();
-            currentIndex++;
+        function pass() {
+            msg("🎉 正确", "text-emerald-500");
+            state = 'next'; idx++;
+            document.getElementById('mainBtn').innerText = "下一个 (Enter)";
+            document.getElementById('mainBtn').className = "w-full bg-emerald-500 text-white font-black py-5 rounded-2xl shadow-lg transition text-lg";
         }
 
         function fail(t) {
-            document.getElementById('feedback').innerText = `❌ 错误 (提示: ${t})`;
-            document.getElementById('feedback').className = "text-[11px] font-black mt-4 text-red-500";
-            if (!vocabNotebook.find(i => i.word === currentWord.word)) {
-                vocabNotebook.unshift(currentWord);
-                saveData(); updateUI();
-            }
+            msg(`❌ 错误 (提示: ${t})`, "text-red-500");
+            if(!nb.find(x=>x.w===cur.w)) { nb.unshift(cur); save(); updateUI(); }
         }
 
-        // --- 生词/数据 ---
+        function msg(t, c) { const e=document.getElementById('fB'); e.innerText=t; e.className=`text-[11px] font-black mt-4 h-4 ${c}`; }
+
+        function sMode(m) {
+            mode = m;
+            ['mQ','mD','smQ','smD'].forEach(id => {
+                const el = document.getElementById(id);
+                if(el) el.classList.toggle('active-mode', id.toLowerCase().includes(m[0]));
+            });
+            if(cur) load();
+        }
+
         function updateUI() {
-            document.getElementById('navNb').innerText = vocabNotebook.length;
-            document.getElementById('navSb').innerText = stubbornNotebook.length;
-            renderList('nbList', vocabNotebook, 'nb');
-            renderList('sbList', stubbornNotebook, 'sb');
+            document.getElementById('nC').innerText = nb.length;
+            document.getElementById('sC').innerText = sb.length;
+            render('nbL', nb, 'nb'); render('sbL', sb, 'sb');
         }
 
-        function renderList(id, data, type) {
+        function render(id, data, t) {
             const box = document.getElementById(id); box.innerHTML = '';
-            data.forEach((w, i) => {
-                const div = document.createElement('div');
-                div.className = "flex justify-between items-center p-3 bg-slate-50 rounded-xl border border-slate-100";
-                div.innerHTML = `<div><b class="text-sm">${w.word}</b> <span class="text-[10px] text-slate-400">${w.reading}</span><p class="text-[10px] opacity-60">${w.meaning}</p></div>
-                                <button onclick="delWord(${i},'${type}')" class="text-indigo-600 font-bold text-xs">掌握</button>`;
-                box.appendChild(div);
+            data.forEach((x, i) => {
+                const d = document.createElement('div');
+                d.className = "flex justify-between items-center p-3 bg-slate-50 rounded-xl border";
+                d.innerHTML = `<div><b class='text-sm'>${x.w}</b> <span class='text-[10px] opacity-40'>${x.rd}</span><p class='text-[10px] opacity-60'>${x.m}</p></div>
+                               <button onclick="del(${i},'${t}')" class="text-indigo-600 font-bold text-xs">掌握</button>`;
+                box.appendChild(d);
             });
         }
 
-        function delWord(i, t) {
-            if(t === 'nb') vocabNotebook.splice(i,1); else stubbornNotebook.splice(i,1);
-            saveData(); updateUI();
+        function del(i,t) { if(t==='nb') nb.splice(i,1); else sb.splice(i,1); save(); updateUI(); }
+        function save() { localStorage.setItem('gina_nb', JSON.stringify(nb)); }
+        function toggleM(id) { document.getElementById(id).classList.toggle('hidden'); }
+        function quickStart(t) { 
+            let d = (t==='nb')?nb:sb; if(!d.length) return;
+            q = [...d].sort(()=>Math.random()-0.5); idx=0; toggleM(t+'M'); go(); 
         }
 
-        function saveData() {
-            localStorage.setItem('gina_vocab_notebook', JSON.stringify(vocabNotebook));
-            localStorage.setItem('gina_stubborn_notebook', JSON.stringify(stubbornNotebook));
-        }
-
-        function startInstant(type) {
-            let data = (type === 'nb') ? vocabNotebook : stubbornNotebook;
-            if(!data.length) return;
-            studyQueue = [...data].sort(() => Math.random() - 0.5);
-            currentIndex = 0;
-            toggleModal(type + 'Modal');
-            startStudy();
-        }
-
-        function checkResume() {
-            if(localStorage.getItem('gina_v61_snap')) document.getElementById('resumeBox').classList.remove('hidden-section');
-        }
-
-        function resumeStudy() {
-            const d = JSON.parse(localStorage.getItem('gina_v61_snap'));
-            studyQueue = d.q; currentIndex = d.i; studyMode = d.m || 'deep'; setMode(studyMode); startStudy();
-        }
-
-        function showFinish() {
-            document.getElementById('studySection').classList.add('hidden-section');
-            document.getElementById('finishSection').classList.remove('hidden-section');
-            localStorage.removeItem('gina_v61_snap');
-        }
-
-        function toggleModal(id) { document.getElementById(id).classList.toggle('hidden-section'); }
-        function exportExcel() {
-            const ws = XLSX.utils.json_to_sheet(vocabNotebook);
-            const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Vocab");
-            XLSX.writeFile(wb, `Gina_Words.xlsx`);
-        }
-
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') {
-                if (!document.getElementById('btnNext').classList.contains('hidden-section')) loadNextWord();
-                else if (!document.getElementById('studySection').classList.contains('hidden-section')) handleAction();
-            }
-        });
+        document.onkeydown = (e) => { if(e.key === 'Enter') ctrl(); };
     </script>
 </body>
 </html>
