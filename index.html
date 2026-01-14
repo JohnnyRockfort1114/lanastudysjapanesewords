@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gina's Japanese Drill V2.0</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        body { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; background-color: #f8fafc; }
+        .fade-in { animation: fadeIn 0.4s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .shake { animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both; }
+        @keyframes shake { 10%, 90% { transform: translate3d(-1px, 0, 0); } 20%, 80% { transform: translate3d(2px, 0, 0); } 30%, 50%, 70% { transform: translate3d(-4px, 0, 0); } 40%, 60% { transform: translate3d(4px, 0, 0); } }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen text-slate-800">
+
+    <div class="w-full max-w-lg p-6 bg-white rounded-xl shadow-xl m-4 border-t-4 border-indigo-600 fade-in">
+        
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-xl font-bold text-indigo-700">🇯🇵 深度记忆训练 V2</h1>
+            <span id="progress-text" class="text-xs font-mono text-gray-400">0/0</span>
+        </div>
+
+        <div id="upload-section" class="text-center py-10">
+            <div class="border-2 border-dashed border-indigo-200 rounded-lg p-8 hover:bg-indigo-50 transition cursor-pointer relative group">
+                <input type="file" id="fileInput" accept=".xlsx, .xls" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onchange="handleFileUpload(event)">
+                <div class="text-indigo-500 group-hover:scale-105 transition-transform">
+                    <p class="text-4xl mb-2">📂</p>
+                    <p class="font-bold">上传 Excel 单词表</p>
+                    <p class="text-xs text-gray-400 mt-2">格式：A列写法 | B列读音 | C列中文</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="study-section" class="hidden">
+            <div class="flex justify-center mb-4">
+                <span id="step-badge" class="px-3 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-700">
+                    STEP 1: 读音回忆
+                </span>
+            </div>
+
+            <div class="text-center mb-8">
+                <h2 id="meaning-text" class="text-3xl font-extrabold text-slate-800 mb-2"></h2>
+                <p id="hint-text" class="h-6 text-lg text-indigo-600 font-medium"></p> 
+            </div>
+
+            <div class="relative">
+                <input type="text" id="answer-input" 
+                    class="w-full px-4 py-4 text-xl text-center border-2 border-gray-200 rounded-lg focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition shadow-inner bg-gray-50"
+                    placeholder="输入平假名..." autocomplete="off">
+                <p id="feedback-msg" class="absolute -bottom-6 left-0 right-0 text-center text-xs font-bold text-red-500 h-4"></p>
+            </div>
+
+            <div class="mt-8 text-center">
+                <p class="text-xs text-gray-400">按下 <kbd class="font-sans border rounded px-1 bg-gray-100">Enter</kbd> 确认</p>
+            </div>
+        </div>
+
+        <div id="result-section" class="hidden text-center">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">训练完成</h2>
+            <p class="mb-6 text-gray-500">今日任务已执行完毕。</p>
+            
+            <div class="bg-red-50 rounded-lg p-4 text-left mb-6">
+                <h3 class="font-bold text-red-700 text-sm mb-2">需要强化的生词</h3>
+                <ul id="vocab-list" class="list-disc list-inside text-sm text-red-800 space-y-1 max-h-40 overflow-y-auto"></ul>
+            </div>
+            
+            <button onclick="location.reload()" class="w-full bg-indigo-600 text-white py-3 rounded-lg font-bold hover:bg-indigo-700 transition shadow-lg">
+                开始新一轮
+            </button>
+        </div>
+
+    </div>
+
+    <script>
+        // --- 数据模型与状态 ---
+        let wordList = [];
+        let currentIndex = 0;
+        let currentStep = 1; // 1: Input Kana, 2: Input Surface (Kanji)
+        let stepErrorCount = 0; // 当前步骤的错误计数
+        let vocabBook = JSON.parse(localStorage.getItem('gina_vocab_v2')) || [];
+
+        // 判断是否包含汉字 (用于分类)
+        function hasKanji(str) {
+            return /[\u4e00-\u9faf]/.test(str);
+        }
+
+        // --- 1. 文件处理 ---
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, {type: 'array'});
+                const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+                const jsonData = XLSX.utils.sheet_to_json(worksheet, {header: 1});
+
+                // 数据清洗与建模
+                wordList = jsonData.filter(row => row.length >= 3).map(row => {
+                    const surface = String(row[0]).trim(); // A列
+                    const kana = String(row[1]).trim();    // B列
+                    const meaning = String(row[2]).trim(); // C列
+                    
+                    // 自动分类：如果有汉字，就是 MIXED；否则是 KANA_ONLY
+                    const type = hasKanji(surface) ? 'MIXED' : 'KANA_ONLY';
+
+                    return { surface, kana, meaning, type };
+                });
+
+                if (wordList.length > 0) {
+                    initStudy();
+                } else {
+                    alert("数据格式错误！请确保Excel有3列数据：A写法，B读音，C中文。");
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function initStudy() {
+            document.getElementById('upload-section').classList.add('hidden');
+            document.getElementById('study-section').classList.remove('hidden');
+            currentIndex = 0;
+            loadWord();
+        }
+
+        // --- 2. 核心流程控制 ---
+        function loadWord() {
+            if (currentIndex >= wordList.length) {
+                showResults();
+                return;
+            }
+
+            const word = wordList[currentIndex];
+            document.getElementById('progress-text').innerText = `${currentIndex + 1} / ${wordList.length}`;
+            document.getElementById('meaning-text').innerText = word.meaning;
+            document.getElementById('feedback-msg').innerText = '';
+            document.getElementById('hint-text').innerText = ''; // 清空提示
+            
+            // 重置状态：所有词都从 Step 1 (读音) 开始
+            currentStep = 1;
+            stepErrorCount = 0;
+            
+            updateUIForStep();
+        }
+
+        function updateUIForStep() {
+            const word = wordList[currentIndex];
+            const input = document.getElementById('answer-input');
+            const badge = document.getElementById('step-badge');
+
+            input.value = '';
+            input.focus();
+
+            if (currentStep === 1) {
+                // 步骤一：输入假名
+                badge.className = "px-3 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-700";
+                badge.innerText = "STEP 1: 输入假名读音";
+                input.placeholder = "输入平假名...";
+            } else {
+                // 步骤二：输入写法 (仅针对含汉字词)
+                badge.className = "px-3 py-1 rounded-full text-xs font-bold bg-orange-100 text-orange-700";
+                badge.innerText = "STEP 2: 输入汉字写法";
+                input.placeholder = "根据读音输入汉字...";
+                // 在步骤二时，显示刚刚输入的正确读音作为提示
+                document.getElementById('hint-text').innerText = word.kana; 
+            }
+        }
+
+        // --- 3. 校验逻辑 ---
+        document.getElementById('answer-input').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') checkAnswer();
+        });
+
+        function checkAnswer() {
+            const input = document.getElementById('answer-input');
+            const userVal = input.value.trim();
+            const word = wordList[currentIndex];
+            let isCorrect = false;
+
+            // 逻辑分支
+            if (currentStep === 1) {
+                // 校验读音
+                if (userVal === word.kana) isCorrect = true;
+            } else {
+                // 校验写法
+                if (userVal === word.surface) isCorrect = true;
+            }
+
+            if (isCorrect) {
+                handleSuccess(word);
+            } else {
+                handleError(word);
+            }
+        }
+
+        function handleSuccess(word) {
+            // 动画反馈：绿色边框闪烁
+            const input = document.getElementById('answer-input');
+            input.classList.add('border-green-500', 'ring-green-500');
+            setTimeout(() => input.classList.remove('border-green-500', 'ring-green-500'), 300);
+
+            // 流程流转逻辑
+            if (currentStep === 1) {
+                if (word.type === 'MIXED') {
+                    // 混合词：进入第二步
+                    currentStep = 2;
+                    stepErrorCount = 0; // 新步骤，错误计数重置
+                    setTimeout(updateUIForStep, 200); // 稍微延迟让用户感觉到切换
+                } else {
+                    // 纯假名：直接完成
+                    nextWord();
+                }
+            } else {
+                // 第二步完成：直接完成
+                nextWord();
+            }
+        }
+
+        function handleError(word) {
+            stepErrorCount++;
+            const input = document.getElementById('answer-input');
+            const feedback = document.getElementById('feedback-msg');
+
+            // 错误动画
+            input.classList.add('shake', 'border-red-500');
+            setTimeout(() => input.classList.remove('shake', 'border-red-500'), 500);
+
+            input.value = ''; // 清空输入，强制重输
+            feedback.innerText = `错误！再试一次 (${stepErrorCount}/3)`;
+
+            // 错误三次加入生词本
+            if (stepErrorCount >= 3) {
+                addToVocab(word);
+                // 提示正确答案
+                const answer = currentStep === 1 ? word.kana : word.surface;
+                feedback.innerText = `正确答案: ${answer} (已加入生词本)`;
+            }
+        }
+
+        function nextWord() {
+            currentIndex++;
+            loadWord();
+        }
+
+        // --- 4. 持久化与结果 ---
+        function addToVocab(word) {
+            const exists = vocabBook.find(w => w.surface === word.surface);
+            if (!exists) {
+                vocabBook.push(word);
+                localStorage.setItem('gina_vocab_v2', JSON.stringify(vocabBook));
+            }
+        }
+
+        function showResults() {
+            document.getElementById('study-section').classList.add('hidden');
+            document.getElementById('result-section').classList.remove('hidden');
+            
+            const listElem = document.getElementById('vocab-list');
+            listElem.innerHTML = '';
+            
+            if (vocabBook.length === 0) {
+                listElem.innerHTML = '<li class="text-green-600">完美！本次没有触发三次错误的生词。</li>';
+            } else {
+                vocabBook.forEach(w => {
+                    const li = document.createElement('li');
+                    li.textContent = `${w.surface} (${w.kana}) - ${w.meaning}`;
+                    listElem.appendChild(li);
+                });
+            }
+        }
+    </script>
+</body>
+</html>
