@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>日语深度记忆训练 V3.1</title>
+    <title>日语深度记忆训练 V3.2</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
@@ -16,7 +16,7 @@
 <body class="text-slate-800 h-screen flex flex-col">
 
     <nav class="bg-indigo-600 text-white p-4 shadow-md flex justify-between items-center shrink-0">
-        <h1 class="font-bold text-lg tracking-wide">🇯🇵 深度记忆 V3.1</h1>
+        <h1 class="font-bold text-lg tracking-wide">🇯🇵 深度记忆 V3.2</h1>
         <div class="space-x-3 text-sm">
             <button onclick="toggleModal('historyModal')" class="hover:text-indigo-200 transition">📜 历史</button>
             <button onclick="toggleModal('notebookModal')" class="bg-white text-indigo-600 px-3 py-1 rounded-full font-bold hover:bg-indigo-50 transition shadow">📕 生词本 (<span id="notebookCount">0</span>)</button>
@@ -36,13 +36,13 @@
                 选择文件 (支持多选)
                 <input type="file" id="fileInput" class="hidden" accept=".xlsx, .xls" multiple />
             </label>
-            <p class="mt-4 text-xs text-slate-400">格式：A写法 | B读音 | C中文 (所有Sheet都会被读取)</p>
+            <p class="mt-4 text-xs text-slate-400">格式：A写法 | B读音 | C中文</p>
         </div>
 
         <div id="studySection" class="hidden-section w-full max-w-md">
             <div class="mb-4 flex justify-between text-xs font-bold text-slate-500 px-1">
-                <span>剩余: <span id="remainCount">0</span></span>
-                <span>当前进度</span>
+                <span>剩余: <span id="remainCount">0</span> / <span id="totalCount">0</span></span>
+                <span>进度: <span id="percentText">0%</span></span>
             </div>
             <div class="w-full bg-slate-200 rounded-full h-2 mb-6">
                 <div id="progressBar" class="bg-indigo-500 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
@@ -51,7 +51,7 @@
             <div class="bg-white rounded-2xl shadow-xl overflow-hidden min-h-[400px] flex flex-col relative fade-in">
                 <div class="bg-slate-50 p-6 text-center border-b border-slate-100">
                     <span class="inline-block px-3 py-1 bg-indigo-100 text-indigo-600 rounded-full text-xs font-bold tracking-wider mb-2">中文含义</span>
-                    <h3 id="questionText" class="text-3xl font-bold text-slate-800 min-h-[48px] flex items-center justify-center">准备中...</h3>
+                    <h3 id="questionText" class="text-3xl font-bold text-slate-800 min-h-[48px] flex items-center justify-center">加载中...</h3>
                 </div>
 
                 <div class="p-6 flex-grow flex flex-col justify-center space-y-4">
@@ -65,12 +65,12 @@
                         <input type="text" id="inputKanji" class="w-full border-2 border-slate-200 rounded-xl p-3 text-lg focus:outline-none focus:border-indigo-500 transition text-center" placeholder="例如: 私" autocomplete="off">
                     </div>
 
-                    <div id="feedback" class="text-center text-sm font-bold min-h-[20px]"></div>
+                    <div id="feedback" class="text-center text-sm font-bold min-h-[24px]"></div>
                 </div>
 
                 <div class="p-4 bg-slate-50 border-t border-slate-100">
-                    <button id="btnSubmit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl shadow-md transition transform active:scale-95">提交 (Enter)</button>
-                    <button id="btnNext" class="hidden-section w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 rounded-xl shadow-md transition transform active:scale-95">下一个 (Enter)</button>
+                    <button id="btnSubmit" onclick="checkAnswer()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl shadow-md transition transform active:scale-95">提交 (Enter)</button>
+                    <button id="btnNext" onclick="loadNextWord()" class="hidden-section w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 rounded-xl shadow-md transition transform active:scale-95">下一个 (Enter)</button>
                 </div>
             </div>
         </div>
@@ -78,42 +78,26 @@
         <div id="finishSection" class="hidden-section text-center fade-in bg-white p-8 rounded-2xl shadow-xl max-w-sm">
             <div class="text-6xl mb-4">🎉</div>
             <h2 class="text-2xl font-bold text-slate-800 mb-2">本次训练完成！</h2>
-            <p class="text-slate-600 mb-6">所有的责任你都担起来了。保持这个节奏。</p>
+            <p class="text-slate-600 mb-6">所有的责任你都担起来了。这就是执行力。</p>
             <button onclick="location.reload()" class="bg-indigo-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-indigo-700 transition">再来一组</button>
         </div>
     </main>
 
     <div id="notebookModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50 p-4">
-        <div class="bg-white rounded-2xl w-full max-w-2xl max-h-[80vh] flex flex-col shadow-2xl">
+        <div class="bg-white rounded-2xl w-full max-w-2xl max-h-[80vh] flex flex-col">
             <div class="p-4 border-b flex justify-between items-center bg-indigo-50 rounded-t-2xl">
-                <h3 class="font-bold text-lg text-indigo-900">📕 生词本 (错误3次自动加入)</h3>
+                <h3 class="font-bold text-lg text-indigo-900">📕 生词本</h3>
                 <button onclick="toggleModal('notebookModal')" class="text-slate-400 hover:text-slate-600 text-2xl">&times;</button>
             </div>
-            <div class="p-4 overflow-y-auto flex-grow">
-                <table class="w-full text-left border-collapse">
-                    <thead>
-                        <tr class="text-xs text-slate-400 border-b">
-                            <th class="py-2">写法</th><th class="py-2">读音</th><th class="py-2">含义</th><th class="py-2 text-right">操作</th>
-                        </tr>
-                    </thead>
-                    <tbody id="notebookList" class="text-sm text-slate-700"></tbody>
-                </table>
-                <div id="emptyNotebookMsg" class="text-center text-slate-400 py-10 hidden">暂无生词。</div>
-            </div>
-            <div class="p-4 border-t bg-slate-50 rounded-b-2xl text-right">
-                <button onclick="clearNotebook()" class="text-red-500 text-xs hover:underline mr-4">清空生词本</button>
-                <button onclick="toggleModal('notebookModal')" class="bg-slate-200 text-slate-700 px-4 py-2 rounded-lg text-sm font-bold">关闭</button>
-            </div>
+            <div class="p-4 overflow-y-auto flex-grow"><table class="w-full text-left"><tbody id="notebookList"></tbody></table><div id="emptyNotebookMsg" class="text-center text-slate-400 py-10 hidden">暂无生词。</div></div>
+            <div class="p-4 border-t bg-slate-50 text-right"><button onclick="clearNotebook()" class="text-red-500 text-xs mr-4">清空</button><button onclick="toggleModal('notebookModal')" class="bg-slate-200 px-4 py-2 rounded-lg text-sm font-bold">关闭</button></div>
         </div>
     </div>
 
     <div id="historyModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50 p-4">
         <div class="bg-white rounded-2xl w-full max-w-md max-h-[60vh] flex flex-col shadow-2xl">
             <div class="p-4 border-b bg-slate-50 rounded-t-2xl"><h3 class="font-bold text-lg text-slate-700">📜 上传历史</h3></div>
-            <div class="p-4 overflow-y-auto flex-grow">
-                <ul id="historyList" class="space-y-2 text-sm text-slate-600"></ul>
-                <div id="emptyHistoryMsg" class="text-center text-slate-400 py-6 hidden">暂无记录</div>
-            </div>
+            <div class="p-4 overflow-y-auto flex-grow"><ul id="historyList" class="space-y-2 text-sm text-slate-600"></ul></div>
             <div class="p-4 border-t text-center"><button onclick="toggleModal('historyModal')" class="bg-indigo-600 text-white px-6 py-2 rounded-lg text-sm font-bold">关闭</button></div>
         </div>
     </div>
@@ -142,16 +126,20 @@
             }
             localStorage.setItem('gina_upload_history', JSON.stringify(uploadHistory.slice(0, 50)));
             updateHistoryUI();
+            
             if (allData.length === 0) { alert("未找到有效数据！"); return; }
+            
             studyQueue = shuffle(allData);
             totalWords = studyQueue.length;
             currentIndex = 0;
+            
             document.getElementById('uploadSection').classList.add('hidden-section');
             document.getElementById('studySection').classList.remove('hidden-section');
+            document.getElementById('totalCount').innerText = totalWords;
+            
             loadNextWord();
         });
 
-        // 解析Excel - 自动识别所有Sheet
         function parseExcel(file) {
             return new Promise((resolve) => {
                 const reader = new FileReader();
@@ -185,11 +173,19 @@
                 document.getElementById('finishSection').classList.remove('hidden-section');
                 return;
             }
+
             currentWord = studyQueue[currentIndex];
             wrongAttempts = 0;
+
+            // UI 更新
             document.getElementById('questionText').innerText = currentWord.meaning || "（无中文）";
-            document.getElementById('remainCount').innerText = studyQueue.length - currentIndex;
-            document.getElementById('progressBar').style.width = `${(currentIndex / totalWords) * 100}%`;
+            document.getElementById('remainCount').innerText = currentIndex + 1;
+            
+            const progress = (currentIndex / totalWords) * 100;
+            document.getElementById('progressBar').style.width = `${progress}%`;
+            document.getElementById('percentText').innerText = `${Math.round(progress)}%`;
+
+            // 重置输入状态
             document.getElementById('inputKana').value = '';
             document.getElementById('inputKanji').value = '';
             document.getElementById('inputKana').disabled = false;
@@ -197,41 +193,56 @@
             document.getElementById('step1').classList.remove('opacity-50');
             document.getElementById('step2').classList.add('hidden-section');
             document.getElementById('feedback').innerText = '';
+            
             document.getElementById('btnSubmit').classList.remove('hidden-section');
             document.getElementById('btnNext').classList.add('hidden-section');
-            document.getElementById('inputKana').focus();
+            
+            setTimeout(() => document.getElementById('inputKana').focus(), 10);
         }
 
         function checkAnswer() {
             const feedbackEl = document.getElementById('feedback');
-            if (document.getElementById('step2').classList.contains('hidden-section')) {
+            const step2Visible = !document.getElementById('step2').classList.contains('hidden-section');
+
+            if (!step2Visible) {
+                // 检查读音
                 if (document.getElementById('inputKana').value.trim() === currentWord.kana) {
-                    feedbackEl.innerText = "✓ 读音正确，写汉字";
+                    feedbackEl.innerText = "✓ 读音正确，请写出汉字";
                     feedbackEl.className = "text-center text-sm font-bold text-indigo-600";
                     document.getElementById('inputKana').disabled = true;
                     document.getElementById('step1').classList.add('opacity-50');
                     document.getElementById('step2').classList.remove('hidden-section');
                     document.getElementById('inputKanji').disabled = false;
                     document.getElementById('inputKanji').focus();
-                } else { handleWrong("读音错误"); }
+                } else {
+                    handleWrong("读音错误");
+                }
             } else {
+                // 检查写法
                 if (document.getElementById('inputKanji').value.trim() === currentWord.kanji) {
-                    feedbackEl.innerText = "🎉 正确！";
+                    feedbackEl.innerText = "🎉 正确！按回车继续";
                     feedbackEl.className = "text-center text-sm font-bold text-green-600";
                     document.getElementById('inputKanji').disabled = true;
+                    
+                    // 关键点：在跳转前增加索引
+                    currentIndex++; 
+                    
                     document.getElementById('btnSubmit').classList.add('hidden-section');
-                    document.getElementById('btnNext').classList.remove('hidden-section').focus();
-                    currentIndex++;
-                } else { handleWrong("写法错误"); }
+                    document.getElementById('btnNext').classList.remove('hidden-section');
+                    document.getElementById('btnNext').focus();
+                } else {
+                    handleWrong("写法错误");
+                }
             }
         }
 
         function handleWrong(m) {
             wrongAttempts++;
-            document.getElementById('feedback').innerText = `❌ ${m} (${wrongAttempts >= 3 ? currentWord.kana + ' / ' + currentWord.kanji : '再试一次'})`;
-            document.getElementById('feedback').className = "text-center text-sm font-bold text-red-500 animate-pulse";
+            const f = document.getElementById('feedback');
+            f.innerText = `❌ ${m} (${wrongAttempts >= 3 ? currentWord.kana + ' / ' + currentWord.kanji : '再试一次'})`;
+            f.className = "text-center text-sm font-bold text-red-500 animate-pulse";
             if (wrongAttempts === 3) {
-                if (!vocabNotebook.some(i => i.kanji === currentWord.kanji)) {
+                if (!vocabNotebook.some(i => i.kanji === currentWord.kanji && i.kana === currentWord.kana)) {
                     vocabNotebook.unshift(currentWord);
                     localStorage.setItem('gina_vocab_notebook', JSON.stringify(vocabNotebook));
                     updateNotebookUI();
@@ -249,7 +260,7 @@
                 vocabNotebook.forEach((w, i) => {
                     const r = document.createElement('tr');
                     r.className = "border-b text-xs";
-                    r.innerHTML = `<td class="py-2 font-bold">${w.kanji}</td><td>${w.kana}</td><td>${w.meaning}</td><td class="text-right"><button onclick="removeNB(${i})" class="text-green-600">已掌握</button></td>`;
+                    r.innerHTML = `<td class="py-2 font-bold">${w.kanji}</td><td class="px-2">${w.kana}</td><td>${w.meaning}</td><td class="text-right"><button onclick="removeNB(${i})" class="text-green-600 font-bold">已掌握</button></td>`;
                     list.appendChild(r);
                 });
             }
@@ -260,25 +271,33 @@
         function updateHistoryUI() {
             const list = document.getElementById('historyList');
             list.innerHTML = '';
-            if (!uploadHistory.length) document.getElementById('emptyHistoryMsg').classList.remove('hidden');
-            else {
-                document.getElementById('emptyHistoryMsg').classList.add('hidden');
-                uploadHistory.forEach(h => {
-                    const li = document.createElement('li');
-                    li.innerHTML = `📜 ${h}`;
-                    list.appendChild(li);
-                });
-            }
+            if (!uploadHistory.length) document.getElementById('historyList').innerHTML = '<li class="text-center text-slate-400">暂无记录</li>';
+            else uploadHistory.forEach(h => {
+                const li = document.createElement('li');
+                li.innerHTML = `📜 ${h}`;
+                list.appendChild(li);
+            });
         }
 
         function toggleModal(id) { document.getElementById(id).classList.toggle('hidden'); }
         function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
 
         document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') { toggleModal('notebookModal'); toggleModal('historyModal'); }
+            if (e.key === 'Escape') { document.getElementById('notebookModal').classList.add('hidden'); document.getElementById('historyModal').classList.add('hidden'); }
             if (e.key === 'Enter') {
-                if (!document.getElementById('btnSubmit').classList.contains('hidden-section')) checkAnswer();
-                else if (!document.getElementById('btnNext').classList.contains('hidden-section')) loadNextWord();
+                const isStudyVisible = !document.getElementById('studySection').classList.contains('hidden-section');
+                if (!isStudyVisible) return;
+                
+                const btnSubmit = document.getElementById('btnSubmit');
+                const btnNext = document.getElementById('btnNext');
+                
+                if (!btnSubmit.classList.contains('hidden-section')) {
+                    checkAnswer();
+                    e.preventDefault();
+                } else if (!btnNext.classList.contains('hidden-section')) {
+                    loadNextWord();
+                    e.preventDefault();
+                }
             }
         });
     </script>
