@@ -3,118 +3,151 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gina’Great Helper V7.1 | </title>
+    <title>G-COMMANDER V7.2 </title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         body { font-family: 'Inter', system-ui, -apple-system, sans-serif; background-color: #f3f4f6; }
-        .glass { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.3); }
-        .fade-in { animation: fadeIn 0.4s ease-out forwards; }
+        .glass { background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.4); }
+        .fade-in { animation: fadeIn 0.3s ease-out forwards; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .hidden-section { display: none !important; }
         .active-mode { background-color: #4f46e5 !important; color: white !important; box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.3); }
         .input-focus:focus { box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.2); border-color: #6366f1; }
+        /* 震动特效：错误超过3次时触发 */
+        .shake { animation: shake 0.5s; }
+        @keyframes shake { 0% { transform: translate(1px, 1px) rotate(0deg); } 10% { transform: translate(-1px, -2px) rotate(-1deg); } 20% { transform: translate(-3px, 0px) rotate(1deg); } 30% { transform: translate(3px, 2px) rotate(0deg); } 40% { transform: translate(1px, -1px) rotate(1deg); } 50% { transform: translate(-1px, 2px) rotate(-1deg); } 60% { transform: translate(-3px, 1px) rotate(0deg); } 70% { transform: translate(3px, 1px) rotate(-1deg); } 80% { transform: translate(-1px, -1px) rotate(1deg); } 90% { transform: translate(1px, 2px) rotate(0deg); } 100% { transform: translate(1px, -2px) rotate(-1deg); } }
     </style>
 </head>
 <body class="text-slate-800 h-screen flex flex-col overflow-hidden bg-slate-100">
 
-    <nav class="bg-indigo-700 text-white p-4 shadow-lg flex justify-between items-center z-50 shrink-0">
+    <nav class="bg-indigo-800 text-white p-3 shadow-lg flex justify-between items-center z-50 shrink-0">
         <div class="flex items-center space-x-3 cursor-pointer" onclick="location.reload()">
             <span class="text-2xl">🦁</span>
-            <span class="font-black text-xl tracking-tighter">Gina’s Great Helper V7.1</span>
+            <div class="flex flex-col">
+                <span class="font-black text-lg tracking-tighter leading-none">G-COMMANDER</span>
+                <span class="text-[10px] opacity-60 font-mono tracking-widest">V7.2 RATIONAL</span>
+            </div>
         </div>
-        <div class="flex space-x-4 text-sm font-bold">
-            <button onclick="openModal('stubbornModal')" class="hover:text-indigo-200 transition flex items-center">
-                ☠️ 顽固 <span id="navStubborn" class="ml-1 bg-slate-900 px-2 py-0.5 rounded-full text-xs">0</span>
+        <div class="flex space-x-3 text-xs font-bold">
+            <button onclick="openModal('stubbornModal')" class="bg-slate-900/50 hover:bg-slate-900 px-3 py-1.5 rounded-lg transition flex items-center border border-white/10">
+                ☠️ 顽固 <span id="navStubborn" class="ml-2 text-amber-400">0</span>
             </button>
-            <button onclick="openModal('notebookModal')" class="hover:text-indigo-200 transition flex items-center">
-                📕 生词 <span id="navNotebook" class="ml-1 bg-white text-indigo-700 px-2 py-0.5 rounded-full text-xs">0</span>
+            <button onclick="openModal('notebookModal')" class="bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg transition flex items-center border border-white/10">
+                📕 生词 <span id="navNotebook" class="ml-2 text-indigo-200">0</span>
             </button>
         </div>
     </nav>
 
-    <main class="flex-grow overflow-y-auto p-4 md:p-8 flex flex-col items-center justify-center relative">
+    <main class="flex-grow overflow-y-auto p-4 md:p-6 flex flex-col items-center justify-center relative">
         
-        <div id="homeSection" class="w-full max-w-5xl space-y-8 fade-in">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div class="bg-gradient-to-br from-indigo-600 to-purple-800 p-10 rounded-[2.5rem] text-white shadow-2xl flex flex-col justify-between relative overflow-hidden h-96">
+        <div id="homeSection" class="w-full max-w-5xl space-y-6 fade-in">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="bg-gradient-to-br from-indigo-700 to-purple-900 p-8 rounded-[2rem] text-white shadow-2xl flex flex-col justify-between relative overflow-hidden h-80">
                     <div class="relative z-10">
                         <p class="text-[10px] font-black opacity-60 uppercase tracking-widest mb-1">JLPT Countdown</p>
-                        <div class="text-8xl font-black mb-4 tracking-tight" id="countdownDays">--</div>
-                        <div class="h-1 w-20 bg-indigo-400 mb-4"></div>
-                        <p class="text-sm italic opacity-90 font-medium" id="mottoText">"执行目标，而不是一直在计划。"</p>
+                        <div class="text-7xl font-black mb-2 tracking-tight" id="countdownDays">--</div>
+                        <div class="h-1 w-16 bg-indigo-400 mb-3"></div>
+                        <p class="text-xs italic opacity-90 font-medium" id="mottoText">"执行目标，而不是一直在计划。"</p>
                     </div>
-                    <div class="bg-black/20 backdrop-blur-sm p-4 rounded-2xl border border-white/10 relative z-10 mt-auto">
-                        <p class="text-[10px] font-black uppercase text-indigo-200 mb-1">Rational Advice</p>
-                        <p id="todayTip" class="text-xs font-bold leading-relaxed">屏蔽情绪误导，用理性来看待所有事情。</p>
+                    <div class="bg-black/20 backdrop-blur-sm p-3 rounded-xl border border-white/10 relative z-10 mt-auto">
+                        <p class="text-[10px] font-black uppercase text-indigo-200 mb-0.5">Strategy</p>
+                        <p id="todayTip" class="text-xs font-bold leading-relaxed">先难后易，优先处理高频错词。</p>
                     </div>
-                    <div class="absolute -right-10 -bottom-10 text-[15rem] opacity-5 font-black rotate-12 select-none">G</div>
+                    <div class="absolute -right-8 -bottom-8 text-[12rem] opacity-5 font-black rotate-12 select-none">7.2</div>
                 </div>
 
-                <div class="glass p-10 rounded-[2.5rem] shadow-xl flex flex-col justify-center h-96">
-                    <div id="resumeBox" class="hidden-section mb-6 p-4 bg-amber-50 border-l-4 border-amber-500 rounded-r-xl flex justify-between items-center shadow-sm">
+                <div class="glass p-8 rounded-[2rem] shadow-xl flex flex-col justify-center h-80">
+                    <div id="resumeBox" class="hidden-section mb-4 p-3 bg-amber-50 border-l-4 border-amber-500 rounded-r-lg flex justify-between items-center shadow-sm">
                         <div>
                             <p class="text-[10px] font-black text-amber-500 uppercase">检测到未完成的任务</p>
-                            <p id="resumeText" class="text-xs font-bold text-slate-700 mt-1">上次进度：0/0</p>
+                            <p id="resumeText" class="text-xs font-bold text-slate-700">上次进度：0/0</p>
                         </div>
                         <div class="flex space-x-2">
-                            <button onclick="resumeStudy()" class="bg-amber-500 text-white text-xs px-4 py-2 rounded-lg font-black hover:bg-amber-600 transition">继续</button>
-                            <button onclick="clearResume()" class="text-slate-400 text-xs px-2 py-2 font-bold hover:text-slate-600">放弃</button>
+                            <button onclick="resumeStudy()" class="bg-amber-500 text-white text-xs px-3 py-1.5 rounded-md font-black hover:bg-amber-600 transition">继续</button>
+                            <button onclick="clearResume()" class="text-slate-400 text-xs px-2 py-1.5 font-bold hover:text-slate-600">放弃</button>
                         </div>
                     </div>
 
-                    <h3 class="font-black text-xl text-slate-800 mb-6 flex items-center"><span class="bg-indigo-100 text-indigo-600 p-2 rounded-lg mr-2">⚙️</span> 配置环境</h3>
-                    <label class="flex-grow border-4 border-dashed border-slate-200 rounded-3xl flex flex-col items-center justify-center cursor-pointer hover:border-indigo-500 hover:bg-indigo-50/50 transition group">
+                    <h3 class="font-black text-lg text-slate-800 mb-4 flex items-center"><span class="bg-indigo-100 text-indigo-600 p-1.5 rounded-lg mr-2 text-sm">⚙️</span> 配置环境</h3>
+                    <label class="flex-grow border-4 border-dashed border-slate-200 rounded-2xl flex flex-col items-center justify-center cursor-pointer hover:border-indigo-500 hover:bg-indigo-50/50 transition group">
                         <input type="file" id="fileInput" class="hidden" accept=".xlsx, .xls" />
-                        <span class="text-5xl mb-3 group-hover:scale-110 transition duration-300">📂</span>
-                        <span class="font-black text-slate-700 group-hover:text-indigo-600">导入单词表 (Excel)</span>
-                        <p class="text-[10px] text-slate-400 mt-2 uppercase font-bold tracking-wider">自动合并多Sheet | 智能识别汉字</p>
+                        <span class="text-4xl mb-2 group-hover:scale-110 transition duration-300">📂</span>
+                        <span class="font-black text-slate-700 text-sm group-hover:text-indigo-600">导入单词表 (Excel)</span>
+                        <p class="text-[10px] text-slate-400 mt-1 uppercase font-bold tracking-wider">A:单词 B:读音 C:含义 | 自动去重</p>
                     </label>
                 </div>
             </div>
         </div>
 
-        <div id="studySection" class="hidden-section w-full max-w-2xl fade-in">
-            <div class="flex justify-between items-end mb-6 px-2">
-                <button onclick="location.reload()" class="text-xs font-black text-slate-400 hover:text-indigo-600 transition flex items-center">← 返回大本营</button>
-                <div class="flex space-x-2 bg-white p-1 rounded-xl shadow-sm">
-                    <button id="btnModeQuick" onclick="switchMode('quick')" class="px-4 py-2 rounded-lg text-xs font-black text-slate-500 transition">⚡ 极速模式</button>
-                    <button id="btnModeDeep" onclick="switchMode('deep')" class="px-4 py-2 rounded-lg text-xs font-black text-slate-500 transition">🌊 深度模式</button>
+        <div id="studySection" class="hidden-section w-full max-w-2xl fade-in h-full flex flex-col justify-center">
+            <div class="flex justify-between items-end mb-4 px-2 shrink-0">
+                <button onclick="location.reload()" class="text-xs font-black text-slate-400 hover:text-indigo-600 transition flex items-center">← 返回</button>
+                <div class="flex space-x-1 bg-white p-1 rounded-xl shadow-sm">
+                    <button id="btnModeQuick" onclick="switchMode('quick')" class="px-3 py-1.5 rounded-lg text-[10px] font-black text-slate-500 transition">⚡ 极速(假名)</button>
+                    <button id="btnModeDeep" onclick="switchMode('deep')" class="px-3 py-1.5 rounded-lg text-[10px] font-black text-slate-500 transition">🌊 深度(汉字)</button>
+                    <button id="btnModeMeaning" onclick="switchMode('meaning')" class="px-3 py-1.5 rounded-lg text-[10px] font-black text-slate-500 transition">🧠 含义(中译)</button>
                 </div>
             </div>
 
-            <div class="glass rounded-[3rem] shadow-2xl overflow-hidden relative border border-white">
+            <div class="glass rounded-[2.5rem] shadow-2xl overflow-hidden relative border border-white flex-grow max-h-[600px] flex flex-col">
                 <div class="absolute top-0 left-0 w-full h-1.5 bg-slate-100">
                     <div id="progressBar" class="h-full bg-indigo-600 transition-all duration-300" style="width: 0%"></div>
                 </div>
-                <button onclick="manualAddMistake()" class="absolute top-6 right-8 text-slate-300 hover:text-red-500 transition p-2" title="直接加入生词本">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" /></svg>
-                </button>
-
-                <div class="p-12 pb-8 text-center min-h-[450px] flex flex-col justify-center">
-                    <div class="mb-4"><span id="counter" class="text-[10px] font-black bg-slate-100 text-slate-400 px-3 py-1 rounded-full tracking-widest">0 / 0</span></div>
-                    <h2 id="questionText" class="text-4xl md:text-5xl font-black text-slate-800 mb-10 leading-tight">...</h2>
-                    <div class="space-y-6 max-w-sm mx-auto w-full relative">
-                        <div id="step1Box"><input type="text" id="inputRead" class="input-focus w-full bg-transparent border-b-4 border-slate-200 py-3 text-3xl text-center font-bold text-slate-700 placeholder-slate-300 transition-all outline-none" placeholder="输入读音" autocomplete="off"></div>
-                        <div id="step2Box" class="hidden-section"><input type="text" id="inputKanji" class="input-focus w-full bg-transparent border-b-4 border-slate-200 py-3 text-3xl text-center font-bold text-slate-700 placeholder-slate-300 transition-all outline-none" placeholder="输入汉字" autocomplete="off"></div>
-                        <div id="feedbackBox" class="h-6 mt-4 flex justify-center items-center"></div>
+                
+                <div class="absolute top-6 right-6 left-6 flex justify-between items-start">
+                    <span id="counter" class="text-[10px] font-black bg-slate-100 text-slate-400 px-3 py-1 rounded-full tracking-widest">0 / 0</span>
+                    <div class="flex space-x-2">
+                        <button onclick="markAsKnown()" class="text-[10px] font-bold bg-emerald-50 text-emerald-600 px-2 py-1 rounded-lg border border-emerald-100 hover:bg-emerald-100 transition" title="永久不再复习此词">
+                            👁️‍🗨️ 已熟知
+                        </button>
+                        <button onclick="manualAddMistake()" class="text-slate-300 hover:text-red-500 transition p-1" title="强制加入生词本">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" /></svg>
+                        </button>
                     </div>
                 </div>
 
-                <div class="p-6 bg-slate-50/80 border-t border-slate-100 backdrop-blur-md">
+                <div class="p-8 pb-4 text-center flex-grow flex flex-col justify-center">
+                    <h2 id="questionText" class="text-4xl md:text-5xl font-black text-slate-800 mb-8 leading-tight mt-4">...</h2>
+                    
+                    <div id="strikeBox" class="flex justify-center space-x-1 h-2 mb-4">
+                        </div>
+
+                    <div class="space-y-4 max-w-md mx-auto w-full relative">
+                        <div id="step1Box">
+                            <input type="text" id="input1" class="input-focus w-full bg-transparent border-b-4 border-slate-200 py-3 text-2xl text-center font-bold text-slate-700 placeholder-slate-300 transition-all outline-none" placeholder="..." autocomplete="off">
+                        </div>
+                        
+                        <div id="step2Box" class="hidden-section">
+                            <input type="text" id="inputKanji" class="input-focus w-full bg-transparent border-b-4 border-slate-200 py-3 text-2xl text-center font-bold text-slate-700 placeholder-slate-300 transition-all outline-none" placeholder="输入汉字写法" autocomplete="off">
+                        </div>
+
+                        <div id="feedbackBox" class="h-8 mt-2 flex justify-center items-center text-sm font-bold"></div>
+                        
+                        <div id="answerReveal" class="hidden-section bg-red-50 p-3 rounded-xl border border-red-100 mt-2">
+                            <p class="text-xs text-red-400 uppercase">Correct Answer</p>
+                            <div class="flex justify-center items-center space-x-4 mt-1">
+                                <div><span class="text-xs text-slate-400">单词</span><br><b class="text-lg text-slate-800" id="revealWord">--</b></div>
+                                <div><span class="text-xs text-slate-400">读音</span><br><b class="text-lg text-slate-800" id="revealReading">--</b></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="p-6 bg-slate-50/80 border-t border-slate-100 backdrop-blur-md shrink-0">
                     <button id="actionBtn" onclick="handleEnter()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-black py-4 rounded-2xl shadow-lg active:scale-95 transition-all text-lg tracking-wide">验证 (Enter)</button>
                 </div>
             </div>
         </div>
 
         <div id="finishSection" class="hidden-section w-full max-w-md text-center fade-in">
-            <div class="glass rounded-[3rem] p-12 shadow-2xl">
-                <div class="text-7xl mb-6 animate-bounce">🏆</div>
-                <h2 class="text-3xl font-black text-slate-800 mb-2">本组训练完成</h2>
-                <div class="space-y-3 mt-10">
-                    <button onclick="restartMode('new')" class="w-full bg-white border-2 border-slate-100 hover:border-indigo-500 text-slate-700 font-black py-4 rounded-2xl transition">📂 背诵新文件 (首页)</button>
-                    <button onclick="restartMode('retry')" class="w-full bg-white border-2 border-slate-100 hover:border-amber-500 text-slate-700 font-black py-4 rounded-2xl transition">🔄 打乱再刷一遍</button>
-                    <button onclick="restartMode('review')" class="w-full bg-indigo-600 text-white font-black py-4 rounded-2xl shadow-lg hover:bg-indigo-700 transition">⚔️ 复习本次错题</button>
+            <div class="glass rounded-[3rem] p-10 shadow-2xl">
+                <div class="text-6xl mb-4 animate-bounce">🏆</div>
+                <h2 class="text-2xl font-black text-slate-800 mb-2">任务完成</h2>
+                <div class="space-y-3 mt-8">
+                    <button onclick="restartMode('new')" class="w-full bg-white border-2 border-slate-100 hover:border-indigo-500 text-slate-700 font-black py-3 rounded-2xl transition">📂 首页 (新文件)</button>
+                    <button onclick="restartMode('retry')" class="w-full bg-white border-2 border-slate-100 hover:border-amber-500 text-slate-700 font-black py-3 rounded-2xl transition">🔄 当前列表再刷一遍</button>
+                    <button onclick="restartMode('review')" class="w-full bg-indigo-600 text-white font-black py-3 rounded-2xl shadow-lg hover:bg-indigo-700 transition">⚔️ 复习本次错题</button>
                 </div>
             </div>
         </div>
@@ -123,53 +156,68 @@
 
     <div id="notebookModal" class="hidden-section fixed inset-0 bg-slate-900/70 backdrop-blur-md flex items-center justify-center z-[100] p-4 transition-opacity">
         <div class="bg-white rounded-[2.5rem] w-full max-w-xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden animate-in zoom-in duration-200">
-            <div class="p-6 bg-red-50 border-b border-red-100 flex justify-between items-center">
-                <h3 class="font-black text-xl text-red-600 flex items-center">📕 生词资产 <span id="nbCountModal" class="ml-2 text-xs bg-red-200 text-red-700 px-2 py-1 rounded-full">0</span></h3>
+            <div class="p-5 bg-red-50 border-b border-red-100 flex justify-between items-center shrink-0">
+                <h3 class="font-black text-lg text-red-600 flex items-center">📕 生词资产 <span id="nbCountModal" class="ml-2 text-xs bg-red-200 text-red-700 px-2 py-1 rounded-full">0</span></h3>
                 <button onclick="closeModal('notebookModal')" class="text-2xl text-red-300 hover:text-red-500 font-black">&times;</button>
             </div>
             <div class="p-4 overflow-y-auto flex-grow bg-slate-50" id="notebookList"></div>
-            <div class="p-5 border-t bg-white flex space-x-3 items-center">
+            <div class="p-4 border-t bg-white flex space-x-2 shrink-0">
                 <button onclick="clearData('notebook')" class="text-xs text-slate-400 hover:text-red-600 font-bold px-3 py-3 border border-slate-200 rounded-xl hover:bg-red-50 transition">🗑️ 清空</button>
-                <button onclick="exportData('notebook')" class="px-4 border-2 border-red-100 text-red-500 font-black rounded-xl hover:bg-red-50 py-3 transition text-sm">导出 Excel</button>
-                <button onclick="instantKill('notebook')" class="flex-grow bg-red-500 hover:bg-red-600 text-white font-black py-3 rounded-xl shadow-lg transition">⚔️ 突击复习</button>
+                <button onclick="exportData('notebook')" class="px-3 border-2 border-red-100 text-red-500 font-black rounded-xl hover:bg-red-50 py-3 transition text-xs">导出 Excel</button>
+                <button onclick="instantKill('notebook')" class="flex-grow bg-red-500 hover:bg-red-600 text-white font-black py-3 rounded-xl shadow-lg transition text-sm">⚔️ 突击复习 (错误优先)</button>
             </div>
         </div>
     </div>
 
     <div id="stubbornModal" class="hidden-section fixed inset-0 bg-slate-900/70 backdrop-blur-md flex items-center justify-center z-[100] p-4">
         <div class="bg-white rounded-[2.5rem] w-full max-w-xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden border-4 border-slate-800 animate-in zoom-in duration-200">
-            <div class="p-6 bg-slate-800 text-white flex justify-between items-center">
-                <h3 class="font-black text-xl flex items-center">☠️ 顽固分子 <span id="sbCountModal" class="ml-2 text-xs bg-slate-600 text-white px-2 py-1 rounded-full">0</span></h3>
+            <div class="p-5 bg-slate-800 text-white flex justify-between items-center shrink-0">
+                <h3 class="font-black text-lg flex items-center">☠️ 顽固分子 <span id="sbCountModal" class="ml-2 text-xs bg-slate-600 text-white px-2 py-1 rounded-full">0</span></h3>
                 <button onclick="closeModal('stubbornModal')" class="text-2xl text-slate-500 hover:text-white font-black">&times;</button>
             </div>
             <div class="p-4 overflow-y-auto flex-grow bg-slate-50" id="stubbornList"></div>
-            <div class="p-5 border-t bg-white flex space-x-3 items-center">
+            <div class="p-4 border-t bg-white flex space-x-2 shrink-0">
                 <button onclick="clearData('stubborn')" class="text-xs text-slate-400 hover:text-red-600 font-bold px-3 py-3 border border-slate-200 rounded-xl hover:bg-red-50 transition">🗑️ 清空</button>
-                <button onclick="exportData('stubborn')" class="px-4 border-2 border-slate-200 text-slate-800 font-black rounded-xl hover:bg-slate-100 py-3 transition text-sm">导出 Excel</button>
-                <button onclick="instantKill('stubborn')" class="flex-grow bg-slate-800 hover:bg-black text-white font-black py-3 rounded-xl shadow-lg transition">⚔️ 立即清剿</button>
+                <button onclick="exportData('stubborn')" class="px-3 border-2 border-slate-200 text-slate-800 font-black rounded-xl hover:bg-slate-100 py-3 transition text-xs">导出 Excel</button>
+                <button onclick="instantKill('stubborn')" class="flex-grow bg-slate-800 hover:bg-black text-white font-black py-3 rounded-xl shadow-lg transition text-sm">⚔️ 立即清剿</button>
             </div>
         </div>
     </div>
 
     <script>
-        const DB_KEYS = { NB: 'gina_nb_v7', SB: 'gina_sb_v7', PROG: 'gina_progress_v7', OLD_NB: 'gina_vocab_notebook' };
-        let state = { queue: [], index: 0, currentWord: null, mode: 'deep', step: 1, sessionMistakes: [], sourceType: 'normal' };
-        let notebook = loadData(DB_KEYS.NB) || loadData(DB_KEYS.OLD_NB) || [];
-        let stubborn = loadData(DB_KEYS.SB) || [];
-        const mottos = ["执行目标，而不是一直在计划目标。", "先难后易，处理问题按照这个优先级来解决。", "屏蔽情绪的误导，用理性来看待所有事情。", "要担得起责任二字。", "不要自卑，严格执行。", "要有宏观眼光，不要贪图眼前小利。"];
+        // V7.2 数据结构：每个单词新增 stats: { encountered: 0, wrong: 0, known: false }
+        const DB_KEYS = { NB: 'gina_nb_v7_2', SB: 'gina_sb_v7_2', PROG: 'gina_progress_v7_2' };
+        
+        let state = { 
+            queue: [], index: 0, currentWord: null, mode: 'deep', step: 1, 
+            sessionMistakes: [], sourceType: 'normal', 
+            currentWrongCount: 0 // 当前词在本轮的错误次数 (3次入库)
+        };
+
+        // 数据加载与迁移 (确保旧数据有 stats 字段)
+        let notebook = (loadData(DB_KEYS.NB) || []).map(initStats);
+        let stubborn = (loadData(DB_KEYS.SB) || []).map(initStats);
+
+        const mottos = ["理性看待一切。", "先难后易。", "屏蔽情绪。", "担起责任。", "不贪小利。", "执行目标。"];
 
         window.onload = () => {
             const d = Math.ceil((new Date('2026-07-05') - new Date()) / (86400000));
-            document.getElementById('countdownDays').innerText = d > 0 ? d : "FIGHT";
+            document.getElementById('countdownDays').innerText = d > 0 ? d : "WAR";
             document.getElementById('mottoText').innerText = mottos[Math.floor(Math.random()*mottos.length)];
-            document.getElementById('todayTip').innerText = mottos[Math.floor(Math.random()*mottos.length)];
+            document.getElementById('todayTip').innerText = "V7.2 更新：只有错误超过3次才会自动加入生词本。";
             switchMode('deep'); checkResume(); updateCounters();
         };
+
+        function initStats(w) {
+            if (!w.stats) w.stats = { encountered: 0, wrong: 0, known: false };
+            return w;
+        }
 
         function normalizeStr(str) { return !str ? "" : str.toString().trim().replace(/[\uff01-\uff5e]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xfee0)).replace(/[˗－﹣－]/g, 'ー').toLowerCase(); }
         function loadData(key) { try { return JSON.parse(localStorage.getItem(key)); } catch (e) { return null; } }
         function saveData(key, data) { localStorage.setItem(key, JSON.stringify(data)); }
 
+        // --- 文件解析 ---
         document.getElementById('fileInput').addEventListener('change', (e) => {
             const file = e.target.files[0]; if (!file) return;
             const reader = new FileReader();
@@ -182,17 +230,29 @@
                         if (w && w !== "单词" && w !== "word") {
                             let hasKanji = /[\u4E00-\u9FAF]/.test(w);
                             if (normalizeStr(w) === normalizeStr(r)) hasKanji = false;
-                            allData.push({ word: w, reading: r||w, meaning: m||r, isKanji: hasKanji });
+                            allData.push(initStats({ word: w, reading: r||w, meaning: m||r, isKanji: hasKanji }));
                         }
                     });
                 });
-                if (allData.length > 0) startSession(allData, 'normal'); else alert("未识别到有效单词");
+                if (allData.length > 0) startSession(allData, 'normal'); else alert("无有效数据");
             };
             reader.readAsArrayBuffer(file);
         });
 
+        // --- 核心流程 ---
         function startSession(data, type) {
-            state.queue = (type === 'notebook' || type === 'stubborn' || type === 'review') ? shuffle(data) : data;
+            // 过滤掉已熟知的词
+            let activeData = data.filter(w => !w.stats.known);
+            if (activeData.length === 0 && data.length > 0) { alert("所选列表中的单词已全部标记为熟知！"); return; }
+            
+            // 排序逻辑：生词本/顽固本复习时，错误次数多的排前面
+            if (type !== 'normal') {
+                activeData.sort((a, b) => b.stats.wrong - a.stats.wrong);
+            } else if (type === 'retry') {
+                activeData = shuffle(activeData);
+            }
+
+            state.queue = activeData;
             state.index = 0; state.sourceType = type; state.sessionMistakes = [];
             document.getElementById('homeSection').classList.add('hidden-section');
             document.getElementById('studySection').classList.remove('hidden-section');
@@ -202,51 +262,195 @@
 
         function loadNextWord() {
             if (state.index >= state.queue.length) { finishSession(); return; }
-            state.currentWord = state.queue[state.index]; state.step = 1;
-            document.getElementById('questionText').innerText = state.currentWord.meaning;
+            
+            state.currentWord = state.queue[state.index];
+            state.currentWord.stats.encountered++; // 增加遇见次数
+            state.step = 1; 
+            state.currentWrongCount = 0; // 重置当前词错误计数
+            
+            // UI Update
+            const qText = document.getElementById('questionText');
+            const in1 = document.getElementById('input1');
+            const inKanji = document.getElementById('inputKanji');
+            
+            // 根据模式显示题目
+            if (state.mode === 'meaning') {
+                qText.innerText = state.currentWord.word + (state.currentWord.isKanji ? ` (${state.currentWord.reading})` : "");
+                in1.placeholder = "请输入中文含义 (关键词匹配)";
+            } else {
+                qText.innerText = state.currentWord.meaning;
+                in1.placeholder = (state.mode === 'quick' || !state.currentWord.isKanji) ? "输入假名/拼写" : "Step 1: 输入读音";
+            }
+
             document.getElementById('counter').innerText = `${state.index + 1} / ${state.queue.length}`;
             document.getElementById('progressBar').style.width = `${(state.index / state.queue.length) * 100}%`;
             
-            const inRead = document.getElementById('inputRead'), inKanji = document.getElementById('inputKanji');
-            inRead.value = ''; inKanji.value = ''; inRead.disabled = false; inKanji.classList.add('hidden-section');
-            inRead.placeholder = (state.mode === 'quick' || !state.currentWord.isKanji) ? "输入单词拼写 (假名)" : "Step 1: 输入读音";
-            setFeedback("", ""); updateBtnState("verify"); setTimeout(() => inRead.focus(), 50);
+            in1.value = ''; inKanji.value = ''; in1.disabled = false; 
+            document.getElementById('step2Box').classList.add('hidden-section'); // 确保 Step 2 隐藏
+            document.getElementById('answerReveal').classList.add('hidden-section'); // 隐藏答案区
+            
+            renderStrikes();
+            setFeedback("", ""); updateBtnState("verify"); 
+            setTimeout(() => in1.focus(), 50);
             saveProgress();
         }
 
         function handleEnter() {
-            if (state.step === 3) { state.index++; loadNextWord(); return; }
-            const inRead = document.getElementById('inputRead'), inKanji = document.getElementById('inputKanji');
-            const vR = normalizeStr(inRead.value), vK = normalizeStr(inKanji.value);
-            const tR = normalizeStr(state.currentWord.reading), tW = normalizeStr(state.currentWord.word);
+            if (state.step === 3) { state.index++; loadNextWord(); return; } // Next
 
-            if (state.step === 1) {
-                let target = (state.mode === 'deep' && state.currentWord.isKanji) ? tR : tW;
-                if (vR === target) {
-                    if (state.mode === 'deep' && state.currentWord.isKanji && tR !== tW) {
-                        state.step = 2; inRead.disabled = true; inKanji.classList.remove('hidden-section'); inKanji.focus();
+            const in1 = document.getElementById('input1');
+            const inKanji = document.getElementById('inputKanji');
+            const val1 = normalizeStr(in1.value);
+            const valKanji = normalizeStr(inKanji.value);
+            const w = state.currentWord;
+
+            let isCorrect = false;
+
+            // --- 验证逻辑分支 ---
+            if (state.mode === 'meaning') {
+                // 含义模式：模糊匹配
+                // 逻辑：只要用户的输入包含在答案里，或者答案包含用户输入(且长度>1)，或完全匹配
+                const userVals = val1.replace(/[，,;；]/g, ' ').split(/\s+/); // 用户可能输入多个词
+                const meaningStr = normalizeStr(w.meaning);
+                // 只要有一个用户输入的关键词存在于含义中，算对 (简单模糊)
+                isCorrect = userVals.some(v => v.length > 0 && meaningStr.includes(v));
+                
+                if (isCorrect) markSuccess(); else markFail(`含义: ${w.meaning}`);
+
+            } else if (state.step === 1) {
+                // 读音/拼写验证
+                let target = (state.mode === 'deep' && w.isKanji) ? normalizeStr(w.reading) : normalizeStr(w.word);
+                if (val1 === target) {
+                    if (state.mode === 'deep' && w.isKanji && normalizeStr(w.reading) !== normalizeStr(w.word)) {
+                        // 进入 Step 2
+                        state.step = 2; 
+                        in1.disabled = true; 
+                        // Fix V7.1: 确保移除 hidden class 并 focus
+                        const box2 = document.getElementById('step2Box');
+                        box2.classList.remove('hidden-section'); 
+                        inKanji.focus(); 
                         setFeedback("✓ 读音正确，请写出汉字", "text-indigo-600");
-                    } else markSuccess();
-                } else markFail(target);
+                    } else {
+                        markSuccess();
+                    }
+                } else {
+                    markFail(target);
+                }
             } else if (state.step === 2) {
-                if (vK === tW) markSuccess(); else markFail(tW);
+                // 汉字验证
+                if (valKanji === normalizeStr(w.word)) markSuccess(); else markFail(w.word);
             }
         }
 
-        function markSuccess() { setFeedback("🎉 正确", "text-emerald-500 font-bold text-lg"); state.step = 3; updateBtnState("next"); }
-        function markFail(ans) {
-            setFeedback(`❌ 错误！正确是：${ans}`, "text-red-500 font-bold"); state.step = 3; updateBtnState("next");
-            if (!state.sessionMistakes.find(w => w.word === state.currentWord.word)) state.sessionMistakes.push(state.currentWord);
-            addToNotebook(state.currentWord, 'notebook');
-            if (state.sourceType === 'review') addToNotebook(state.currentWord, 'stubborn');
+        function markSuccess() { 
+            setFeedback("🎉 正确", "text-emerald-600 font-bold text-lg"); 
+            state.step = 3; 
+            updateBtnState("next"); 
         }
 
-        function manualAddMistake() { if (state.currentWord) { addToNotebook(state.currentWord, 'notebook'); alert("已加入生词本"); } }
+        function markFail(correctAnswerText) {
+            state.currentWrongCount++;
+            state.currentWord.stats.wrong++; // 增加总错误统计
+            renderStrikes();
+
+            // 震动特效
+            const container = document.getElementById('studySection').querySelector('.glass');
+            container.classList.add('shake');
+            setTimeout(() => container.classList.remove('shake'), 500);
+
+            // 逻辑更新：只有错误达到3次，才加入生词本
+            if (state.currentWrongCount >= 3) {
+                setFeedback(`❌ 错误次数过多！已加入生词本。`, "text-red-600 font-bold");
+                
+                // 显示完整答案
+                document.getElementById('answerReveal').classList.remove('hidden-section');
+                document.getElementById('revealWord').innerText = state.currentWord.word;
+                document.getElementById('revealReading').innerText = state.currentWord.reading;
+
+                addToNotebook(state.currentWord, 'notebook');
+                if (state.sourceType === 'notebook' || state.sourceType === 'stubborn') {
+                    // 如果是在复习生词本时还错3次，加入顽固本
+                    addToNotebook(state.currentWord, 'stubborn');
+                }
+                
+                state.step = 3; 
+                updateBtnState("next");
+                
+                // 加入本轮错题集(用于最后复习)
+                if (!state.sessionMistakes.find(x => x.word === state.currentWord.word)) {
+                    state.sessionMistakes.push(state.currentWord);
+                }
+            } else {
+                // 还没到3次，提示再试
+                setFeedback(`❌ 错误 ( ${state.currentWrongCount} / 3 )，请重试！`, "text-amber-600 font-bold");
+                // 清空当前输入框 refocus
+                if (state.step === 1) { 
+                    document.getElementById('input1').value = ''; 
+                    document.getElementById('input1').focus(); 
+                } else { 
+                    document.getElementById('inputKanji').value = ''; 
+                    document.getElementById('inputKanji').focus(); 
+                }
+            }
+        }
+
+        function manualAddMistake() { 
+            if (state.currentWord) { 
+                addToNotebook(state.currentWord, 'notebook'); 
+                alert("已强制加入生词本"); 
+            } 
+        }
+
+        // 标记为熟知
+        function markAsKnown() {
+            if (state.currentWord) {
+                if (confirm(`确定要将【${state.currentWord.word}】标记为熟知吗？它将不再出现。`)) {
+                    state.currentWord.stats.known = true;
+                    // 同步更新到生词本/顽固本
+                    updateKnownStatus(notebook, state.currentWord.word);
+                    updateKnownStatus(stubborn, state.currentWord.word);
+                    saveData(DB_KEYS.NB, notebook);
+                    saveData(DB_KEYS.SB, stubborn);
+                    // 跳过当前词
+                    state.index++;
+                    loadNextWord();
+                }
+            }
+        }
+
+        function updateKnownStatus(list, word) {
+            const t = list.find(w => w.word === word);
+            if (t) t.stats.known = true;
+        }
+
         function addToNotebook(wObj, type) {
-            let db = type === 'notebook' ? notebook : stubborn, k = type === 'notebook' ? DB_KEYS.NB : DB_KEYS.SB;
-            if (!db.find(w => w.word === wObj.word)) { db.unshift(wObj); saveData(k, db); updateCounters(); }
+            let db = type === 'notebook' ? notebook : stubborn;
+            let key = type === 'notebook' ? DB_KEYS.NB : DB_KEYS.SB;
+            
+            // 查重：如果已经在里面，更新它的错误统计，移到最前
+            let existingIdx = db.findIndex(w => w.word === wObj.word);
+            if (existingIdx !== -1) {
+                db[existingIdx].stats.wrong++; // 累加历史错误
+                // 移动到头部
+                let temp = db.splice(existingIdx, 1)[0];
+                db.unshift(temp);
+            } else {
+                db.unshift(wObj);
+            }
+            saveData(key, db); updateCounters();
         }
 
+        function renderStrikes() {
+            const box = document.getElementById('strikeBox');
+            box.innerHTML = '';
+            for(let i=0; i<3; i++) {
+                const dot = document.createElement('div');
+                dot.className = `w-2 h-2 rounded-full transition-all ${i < state.currentWrongCount ? 'bg-red-500 scale-125' : 'bg-slate-200'}`;
+                box.appendChild(dot);
+            }
+        }
+
+        // --- 辅助函数 & UI ---
         function setFeedback(msg, cls) { document.getElementById('feedbackBox').innerHTML = `<span class="${cls}">${msg}</span>`; }
         function updateBtnState(type) {
             const btn = document.getElementById('actionBtn');
@@ -256,62 +460,94 @@
 
         function switchMode(m) {
             state.mode = m;
-            document.getElementById('btnModeQuick').classList.toggle('active-mode', m==='quick');
-            document.getElementById('btnModeDeep').classList.toggle('active-mode', m==='deep');
-            if (!document.getElementById('studySection').classList.contains('hidden-section') && state.currentWord) { state.step=1; loadNextWord(); }
+            ['Quick','Deep','Meaning'].forEach(t => {
+                const btn = document.getElementById(`btnMode${t}`);
+                if (m === t.toLowerCase()) {
+                    btn.classList.add('active-mode'); btn.classList.remove('text-slate-500');
+                } else {
+                    btn.classList.remove('active-mode'); btn.classList.add('text-slate-500');
+                }
+            });
+            if (!document.getElementById('studySection').classList.contains('hidden-section') && state.currentWord) { state.index--; state.index = Math.max(0, state.index); loadNextWord(); } // Reload current
         }
 
         function finishSession() { document.getElementById('studySection').classList.add('hidden-section'); document.getElementById('finishSection').classList.remove('hidden-section'); clearResume(); }
         function restartMode(type) {
             if (type === 'new') location.reload();
-            else if (type === 'retry') startSession(state.queue, 'retry');
-            else if (type === 'review') { if(state.sessionMistakes.length) startSession(state.sessionMistakes, 'review'); else alert("全对！"); }
+            else if (type === 'retry') startSession(state.queue, 'retry'); // 这里的 queue 已经过滤了 known
+            else if (type === 'review') { if(state.sessionMistakes.length) startSession(state.sessionMistakes, 'review'); else alert("无错题！"); }
         }
 
+        // --- 持久化 & 弹窗 ---
         function saveProgress() { if (state.sourceType === 'normal') saveData(DB_KEYS.PROG, { q: state.queue, i: state.index, m: state.mode }); }
         function checkResume() { const p = loadData(DB_KEYS.PROG); if(p && p.q.length){ document.getElementById('resumeBox').classList.remove('hidden-section'); document.getElementById('resumeText').innerText = `上次进度：${p.i}/${p.q.length}`; } }
         function resumeStudy() { const p = loadData(DB_KEYS.PROG); if(p){ state.queue=p.q; state.index=p.i; switchMode(p.m||'deep'); document.getElementById('homeSection').classList.add('hidden-section'); document.getElementById('studySection').classList.remove('hidden-section'); loadNextWord(); } }
         function clearResume() { localStorage.removeItem(DB_KEYS.PROG); document.getElementById('resumeBox').classList.add('hidden-section'); }
-
-        function openModal(id) { document.getElementById(id).classList.remove('hidden-section'); renderList(id === 'notebookModal' ? 'notebook' : 'stubborn'); }
+        function openModal(id) { document.getElementById(id).classList.remove('hidden-section'); renderList(id.includes('notebook')?'notebook':'stubborn'); }
         function closeModal(id) { document.getElementById(id).classList.add('hidden-section'); }
-        function updateCounters() { document.getElementById('navNotebook').innerText = notebook.length; document.getElementById('navStubborn').innerText = stubborn.length; document.getElementById('nbCountModal').innerText = notebook.length; document.getElementById('sbCountModal').innerText = stubborn.length; }
+        
+        function updateCounters() { 
+            const nb = notebook.filter(w=>!w.stats.known);
+            const sb = stubborn.filter(w=>!w.stats.known);
+            document.getElementById('navNotebook').innerText = nb.length; 
+            document.getElementById('navStubborn').innerText = sb.length; 
+            document.getElementById('nbCountModal').innerText = nb.length; 
+            document.getElementById('sbCountModal').innerText = sb.length; 
+        }
 
         function renderList(type) {
-            const list = type === 'notebook' ? notebook : stubborn, el = document.getElementById(type === 'notebook' ? 'notebookList' : 'stubbornList');
+            const list = (type === 'notebook' ? notebook : stubborn).filter(w => !w.stats.known);
+            // 列表页也按错误次数排序显示
+            list.sort((a,b) => b.stats.wrong - a.stats.wrong);
+            
+            const el = document.getElementById(type === 'notebook' ? 'notebookList' : 'stubbornList');
             el.innerHTML = '';
             list.forEach((w, i) => {
-                el.innerHTML += `<div class="flex justify-between items-center p-3 mb-2 bg-white rounded-xl border border-slate-100 shadow-sm">
-                    <div><div class="flex items-center"><b class="text-slate-800 mr-2">${w.word}</b><span class="text-xs text-indigo-500 bg-indigo-50 px-1 rounded">${w.reading}</span></div><p class="text-xs text-slate-400 mt-0.5">${w.meaning}</p></div>
-                    <button onclick="removeFromList('${type}', ${i})" class="text-xs font-bold text-slate-300 hover:text-emerald-500 px-2 py-1 border border-slate-100 rounded transition">掌握</button></div>`;
+                // 计算胜率
+                const rate = w.stats.encountered ? Math.round(((w.stats.encountered - w.stats.wrong)/w.stats.encountered)*100) : 0;
+                el.innerHTML += `
+                <div class="flex justify-between items-center p-3 mb-2 bg-white rounded-xl border border-slate-100 shadow-sm">
+                    <div>
+                        <div class="flex items-center">
+                            <b class="text-slate-800 mr-2">${w.word}</b>
+                            <span class="text-[10px] text-slate-400 font-mono">遇见${w.stats.encountered} / 错${w.stats.wrong}</span>
+                        </div>
+                        <p class="text-xs text-slate-400 mt-0.5">${w.meaning}</p>
+                    </div>
+                    <button onclick="markKnownFromList('${type}', '${w.word}')" class="text-xs font-bold text-slate-300 hover:text-emerald-500 px-2 py-1 border border-slate-100 rounded transition">熟知</button>
+                </div>`;
             });
         }
 
-        function removeFromList(type, i) {
-            if (type === 'notebook') { notebook.splice(i, 1); saveData(DB_KEYS.NB, notebook); } 
-            else { stubborn.splice(i, 1); saveData(DB_KEYS.SB, stubborn); }
-            renderList(type); updateCounters();
-        }
-
-        function clearData(type) {
-            if(confirm("⚠️ 确定要清空此列表吗？此操作不可撤销。")) {
-                if(type==='notebook'){ notebook=[]; saveData(DB_KEYS.NB, notebook); } else { stubborn=[]; saveData(DB_KEYS.SB, stubborn); }
+        function markKnownFromList(type, word) {
+            if(confirm("标记为熟知后将永久不再复习，确定吗？")) {
+                updateKnownStatus(notebook, word); updateKnownStatus(stubborn, word);
+                saveData(DB_KEYS.NB, notebook); saveData(DB_KEYS.SB, stubborn);
                 renderList(type); updateCounters();
             }
         }
 
-        function instantKill(type) { const d = type==='notebook'?notebook:stubborn; if(!d.length){alert("列表为空");return;} closeModal(type==='notebook'?'notebookModal':'stubbornModal'); startSession(d, type); }
+        function clearData(type) {
+            if(confirm("⚠️ 确定要清空此列表吗？")) {
+                if(type==='notebook'){ notebook=[]; saveData(DB_KEYS.NB, notebook); } else { stubborn=[]; saveData(DB_KEYS.SB, stubborn); }
+                renderList(type); updateCounters();
+            }
+        }
+        function instantKill(type) { 
+            const d = type==='notebook'?notebook:stubborn; 
+            if(!d.length){alert("列表为空");return;} 
+            closeModal(type==='notebook'?'notebookModal':'stubbornModal'); 
+            startSession(d, type); 
+        }
         function exportData(type) {
-            const d = type==='notebook'?notebook:stubborn; if(!d.length){alert("无数据");return;}
+            const d = (type==='notebook'?notebook:stubborn).filter(w=>!w.stats.known);
+            if(!d.length){alert("无数据");return;}
             const ws = XLSX.utils.aoa_to_sheet([['单词','读音','含义'], ...d.map(w=>[w.word,w.reading,w.meaning])]);
             const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Mistakes");
-            XLSX.writeFile(wb, `Gina_${type}_${new Date().toISOString().slice(0,10)}.xlsx`);
+            XLSX.writeFile(wb, `Gina_Mistakes_${type}.xlsx`);
         }
-
-        function shuffle(arr) { let c = arr.length, r; let n = JSON.parse(JSON.stringify(arr)); while(c!=0){ r=Math.floor(Math.random()*c); c--; [n[c], n[r]] = [n[r], n[c]]; } return n; }
+        function shuffle(arr) { let c = arr.length, r, n = JSON.parse(JSON.stringify(arr)); while(c!=0){ r=Math.floor(Math.random()*c); c--; [n[c], n[r]] = [n[r], n[c]]; } return n; }
         document.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !document.getElementById('studySection').classList.contains('hidden-section')) handleEnter(); });
     </script>
 </body>
 </html>
-
-
