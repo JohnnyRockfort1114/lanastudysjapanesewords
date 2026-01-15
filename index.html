@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>G-COMMANDER V7.2 </title>
+    <title>G-COMMANDER V7.3</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
@@ -14,32 +14,70 @@
         .hidden-section { display: none !important; }
         .active-mode { background-color: #4f46e5 !important; color: white !important; box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.3); }
         .input-focus:focus { box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.2); border-color: #6366f1; }
-        /* 震动特效：错误超过3次时触发 */
         .shake { animation: shake 0.5s; }
         @keyframes shake { 0% { transform: translate(1px, 1px) rotate(0deg); } 10% { transform: translate(-1px, -2px) rotate(-1deg); } 20% { transform: translate(-3px, 0px) rotate(1deg); } 30% { transform: translate(3px, 2px) rotate(0deg); } 40% { transform: translate(1px, -1px) rotate(1deg); } 50% { transform: translate(-1px, 2px) rotate(-1deg); } 60% { transform: translate(-3px, 1px) rotate(0deg); } 70% { transform: translate(3px, 1px) rotate(-1deg); } 80% { transform: translate(-1px, -1px) rotate(1deg); } 90% { transform: translate(1px, 2px) rotate(0deg); } 100% { transform: translate(1px, -2px) rotate(-1deg); } }
     </style>
 </head>
 <body class="text-slate-800 h-screen flex flex-col overflow-hidden bg-slate-100">
 
-    <nav class="bg-indigo-800 text-white p-3 shadow-lg flex justify-between items-center z-50 shrink-0">
-        <div class="flex items-center space-x-3 cursor-pointer" onclick="location.reload()">
+    <!-- 登录/注册页面 -->
+    <div id="authSection" class="hidden-section h-screen flex items-center justify-center p-4">
+        <div class="glass rounded-[3rem] p-10 shadow-2xl w-full max-w-md">
+            <div class="text-center mb-8">
+                <div class="text-5xl mb-3">🦁</div>
+                <h1 class="font-black text-2xl text-slate-800">G-COMMANDER</h1>
+                <p class="text-xs text-slate-400 font-mono mt-1">V7.2 MULTI-USER</p>
+            </div>
+
+            <div class="space-y-4">
+                <div>
+                    <label class="text-xs font-bold text-slate-600 mb-1 block">用户名</label>
+                    <input type="text" id="authUsername" class="input-focus w-full bg-white border-2 border-slate-200 rounded-xl px-4 py-3 text-sm font-bold text-slate-700 outline-none transition" placeholder="字母、数字、下划线" autocomplete="username">
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-slate-600 mb-1 block">密码</label>
+                    <input type="password" id="authPassword" class="input-focus w-full bg-white border-2 border-slate-200 rounded-xl px-4 py-3 text-sm font-bold text-slate-700 outline-none transition" placeholder="至少6位" autocomplete="current-password">
+                </div>
+                <div id="authError" class="text-xs text-red-500 font-bold h-4"></div>
+                <button onclick="handleLogin()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-black py-3 rounded-xl shadow-lg transition">登录</button>
+                <button onclick="handleRegister()" class="w-full bg-white border-2 border-slate-200 hover:border-indigo-500 text-slate-700 font-black py-3 rounded-xl transition">注册新账号</button>
+            </div>
+
+            <p class="text-[10px] text-slate-400 text-center mt-6 leading-relaxed">
+                ⚠️ 本地账号系统 | 数据仅存本浏览器 | 无云同步
+            </p>
+        </div>
+    </div>
+
+    <!-- 主应用界面 -->
+    <nav id="mainNav" class="hidden-section bg-indigo-800 text-white p-3 shadow-lg flex justify-between items-center z-50 shrink-0">
+        <div class="flex items-center space-x-3 cursor-pointer" onclick="goHome()">
             <span class="text-2xl">🦁</span>
             <div class="flex flex-col">
                 <span class="font-black text-lg tracking-tighter leading-none">G-COMMANDER</span>
-                <span class="text-[10px] opacity-60 font-mono tracking-widest">V7.2 RATIONAL</span>
+                <span class="text-[10px] opacity-60 font-mono tracking-widest">V7.2 MULTI-USER</span>
             </div>
         </div>
-        <div class="flex space-x-3 text-xs font-bold">
-            <button onclick="openModal('stubbornModal')" class="bg-slate-900/50 hover:bg-slate-900 px-3 py-1.5 rounded-lg transition flex items-center border border-white/10">
-                ☠️ 顽固 <span id="navStubborn" class="ml-2 text-amber-400">0</span>
-            </button>
-            <button onclick="openModal('notebookModal')" class="bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg transition flex items-center border border-white/10">
-                📕 生词 <span id="navNotebook" class="ml-2 text-indigo-200">0</span>
-            </button>
+        <div class="flex items-center space-x-3">
+            <div class="flex space-x-2 text-xs font-bold">
+                <button onclick="openModal('stubbornModal')" class="bg-slate-900/50 hover:bg-slate-900 px-3 py-1.5 rounded-lg transition flex items-center border border-white/10">
+                    ☠️ 顽固 <span id="navStubborn" class="ml-2 text-amber-400">0</span>
+                </button>
+                <button onclick="openModal('notebookModal')" class="bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg transition flex items-center border border-white/10">
+                    📕 生词 <span id="navNotebook" class="ml-2 text-indigo-200">0</span>
+                </button>
+            </div>
+            <div class="border-l border-white/20 pl-3 flex items-center space-x-2">
+                <div class="text-xs">
+                    <div class="text-[10px] opacity-60">当前用户</div>
+                    <div class="font-black" id="currentUserDisplay">-</div>
+                </div>
+                <button onclick="handleLogout()" class="bg-white/10 hover:bg-white/20 px-2 py-1 rounded-lg text-xs font-bold transition">登出</button>
+            </div>
         </div>
     </nav>
 
-    <main class="flex-grow overflow-y-auto p-4 md:p-6 flex flex-col items-center justify-center relative">
+    <main id="mainContent" class="hidden-section flex-grow overflow-y-auto p-4 md:p-6 flex flex-col items-center justify-center relative">
         
         <div id="homeSection" class="w-full max-w-5xl space-y-6 fade-in">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -82,7 +120,7 @@
 
         <div id="studySection" class="hidden-section w-full max-w-2xl fade-in h-full flex flex-col justify-center">
             <div class="flex justify-between items-end mb-4 px-2 shrink-0">
-                <button onclick="location.reload()" class="text-xs font-black text-slate-400 hover:text-indigo-600 transition flex items-center">← 返回</button>
+                <button onclick="goHome()" class="text-xs font-black text-slate-400 hover:text-indigo-600 transition flex items-center">← 返回</button>
                 <div class="flex space-x-1 bg-white p-1 rounded-xl shadow-sm">
                     <button id="btnModeQuick" onclick="switchMode('quick')" class="px-3 py-1.5 rounded-lg text-[10px] font-black text-slate-500 transition">⚡ 极速(假名)</button>
                     <button id="btnModeDeep" onclick="switchMode('deep')" class="px-3 py-1.5 rounded-lg text-[10px] font-black text-slate-500 transition">🌊 深度(汉字)</button>
@@ -110,8 +148,7 @@
                 <div class="p-8 pb-4 text-center flex-grow flex flex-col justify-center">
                     <h2 id="questionText" class="text-4xl md:text-5xl font-black text-slate-800 mb-8 leading-tight mt-4">...</h2>
                     
-                    <div id="strikeBox" class="flex justify-center space-x-1 h-2 mb-4">
-                        </div>
+                    <div id="strikeBox" class="flex justify-center space-x-1 h-2 mb-4"></div>
 
                     <div class="space-y-4 max-w-md mx-auto w-full relative">
                         <div id="step1Box">
@@ -154,6 +191,7 @@
 
     </main>
 
+    <!-- 生词本弹窗 -->
     <div id="notebookModal" class="hidden-section fixed inset-0 bg-slate-900/70 backdrop-blur-md flex items-center justify-center z-[100] p-4 transition-opacity">
         <div class="bg-white rounded-[2.5rem] w-full max-w-xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden animate-in zoom-in duration-200">
             <div class="p-5 bg-red-50 border-b border-red-100 flex justify-between items-center shrink-0">
@@ -169,6 +207,7 @@
         </div>
     </div>
 
+    <!-- 顽固本弹窗 -->
     <div id="stubbornModal" class="hidden-section fixed inset-0 bg-slate-900/70 backdrop-blur-md flex items-center justify-center z-[100] p-4">
         <div class="bg-white rounded-[2.5rem] w-full max-w-xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden border-4 border-slate-800 animate-in zoom-in duration-200">
             <div class="p-5 bg-slate-800 text-white flex justify-between items-center shrink-0">
@@ -185,41 +224,262 @@
     </div>
 
     <script>
-        // V7.2 数据结构：每个单词新增 stats: { encountered: 0, wrong: 0, known: false }
-        const DB_KEYS = { NB: 'gina_nb_v7_2', SB: 'gina_sb_v7_2', PROG: 'gina_progress_v7_2' };
+        // ========================================
+        // 用户认证系统 (Local-First)
+        // ========================================
         
+        const AUTH_USERS_KEY = 'gina_users_registry'; // 全局用户注册表
+        const CURRENT_USER_KEY = 'gina_current_user'; // 当前登录用户
+        let currentUser = null; // 当前用户名
+
+        /**
+         * SHA-256 哈希密码
+         * @param {string} password - 明文密码
+         * @returns {Promise<string>} - 十六进制哈希值
+         */
+        async function hashPassword(password) {
+            const encoder = new TextEncoder();
+            const data = encoder.encode(password);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        }
+
+        /**
+         * 获取所有已注册用户
+         * @returns {Object} - { username: hashedPassword }
+         */
+        function getAllUsers() {
+            try {
+                return JSON.parse(localStorage.getItem(AUTH_USERS_KEY)) || {};
+            } catch (e) {
+                return {};
+            }
+        }
+
+        /**
+         * 保存用户注册信息
+         * @param {string} username
+         * @param {string} hashedPassword
+         */
+        function saveUser(username, hashedPassword) {
+            const users = getAllUsers();
+            users[username] = hashedPassword;
+            localStorage.setItem(AUTH_USERS_KEY, JSON.stringify(users));
+        }
+
+        /**
+         * 验证用户名格式
+         */
+        function validateUsername(username) {
+            return /^[a-zA-Z0-9_]{3,20}$/.test(username);
+        }
+
+        /**
+         * 验证密码格式
+         */
+        function validatePassword(password) {
+            return password.length >= 6;
+        }
+
+        /**
+         * 注册新用户
+         */
+        async function handleRegister() {
+            const username = document.getElementById('authUsername').value.trim();
+            const password = document.getElementById('authPassword').value;
+            const errorEl = document.getElementById('authError');
+
+            // 验证输入
+            if (!validateUsername(username)) {
+                errorEl.innerText = '用户名格式错误：3-20位字母、数字或下划线';
+                return;
+            }
+            if (!validatePassword(password)) {
+                errorEl.innerText = '密码至少6位';
+                return;
+            }
+
+            // 检查用户名是否已存在
+            const users = getAllUsers();
+            if (users[username]) {
+                errorEl.innerText = '用户名已存在';
+                return;
+            }
+
+            // 哈希密码并保存
+            const hashedPwd = await hashPassword(password);
+            saveUser(username, hashedPwd);
+
+            errorEl.innerText = '';
+            alert('✅ 注册成功！请登录');
+            document.getElementById('authPassword').value = '';
+        }
+
+        /**
+         * 登录
+         */
+        async function handleLogin() {
+            const username = document.getElementById('authUsername').value.trim();
+            const password = document.getElementById('authPassword').value;
+            const errorEl = document.getElementById('authError');
+
+            if (!username || !password) {
+                errorEl.innerText = '请输入用户名和密码';
+                return;
+            }
+
+            // 验证用户
+            const users = getAllUsers();
+            if (!users[username]) {
+                errorEl.innerText = '用户不存在';
+                return;
+            }
+
+            const hashedPwd = await hashPassword(password);
+            if (users[username] !== hashedPwd) {
+                errorEl.innerText = '密码错误';
+                return;
+            }
+
+            // 登录成功
+            currentUser = username;
+            localStorage.setItem(CURRENT_USER_KEY, username);
+            errorEl.innerText = '';
+            showMainApp();
+        }
+
+        /**
+         * 登出
+         */
+        function handleLogout() {
+            if (confirm('确定要登出吗？当前进度将保存。')) {
+                currentUser = null;
+                localStorage.removeItem(CURRENT_USER_KEY);
+                location.reload();
+            }
+        }
+
+        /**
+         * 检查是否已登录（刷新恢复）
+         */
+        function checkAutoLogin() {
+            const savedUser = localStorage.getItem(CURRENT_USER_KEY);
+            if (savedUser) {
+                const users = getAllUsers();
+                if (users[savedUser]) {
+                    currentUser = savedUser;
+                    showMainApp();
+                    return;
+                }
+            }
+            showAuthPage();
+        }
+
+        function showAuthPage() {
+            document.getElementById('authSection').classList.remove('hidden-section');
+            document.getElementById('mainNav').classList.add('hidden-section');
+            document.getElementById('mainContent').classList.add('hidden-section');
+        }
+
+        function showMainApp() {
+            document.getElementById('authSection').classList.add('hidden-section');
+            document.getElementById('mainNav').classList.remove('hidden-section');
+            document.getElementById('mainContent').classList.remove('hidden-section');
+            document.getElementById('currentUserDisplay').innerText = currentUser;
+            initApp();
+        }
+
+        // ========================================
+        // 用户数据隔离 (localStorage 命名空间)
+        // ========================================
+
+        /**
+         * 生成用户专属的 localStorage key
+         * @param {string} key - 数据类型
+         * @returns {string} - user:{username}:{key}
+         */
+        function getUserKey(key) {
+            if (!currentUser) throw new Error('No user logged in');
+            return `user:${currentUser}:${key}`;
+        }
+
+        /**
+         * 读取用户数据
+         */
+        function loadUserData(key) {
+            try {
+                const data = localStorage.getItem(getUserKey(key));
+                return data ? JSON.parse(data) : null;
+            } catch (e) {
+                return null;
+            }
+        }
+
+        /**
+         * 保存用户数据
+         */
+        function saveUserData(key, data) {
+            localStorage.setItem(getUserKey(key), JSON.stringify(data));
+        }
+
+        /**
+         * 删除用户数据
+         */
+        function removeUserData(key) {
+            localStorage.removeItem(getUserKey(key));
+        }
+
+        // ========================================
+        // 核心学习系统 (基于原有逻辑)
+        // ========================================
+
         let state = { 
             queue: [], index: 0, currentWord: null, mode: 'deep', step: 1, 
             sessionMistakes: [], sourceType: 'normal', 
-            currentWrongCount: 0 // 当前词在本轮的错误次数 (3次入库)
+            currentWrongCount: 0
         };
 
-        // 数据加载与迁移 (确保旧数据有 stats 字段)
-        let notebook = (loadData(DB_KEYS.NB) || []).map(initStats);
-        let stubborn = (loadData(DB_KEYS.SB) || []).map(initStats);
+        let notebook = [];
+        let stubborn = [];
 
         const mottos = ["理性看待一切。", "先难后易。", "屏蔽情绪。", "担起责任。", "不贪小利。", "执行目标。"];
 
-        window.onload = () => {
+        /**
+         * 初始化应用
+         */
+        function initApp() {
+            // 加载用户数据
+            notebook = (loadUserData('notebook') || []).map(initStats);
+            stubborn = (loadUserData('stubborn') || []).map(initStats);
+
+            // 初始化UI
             const d = Math.ceil((new Date('2026-07-05') - new Date()) / (86400000));
             document.getElementById('countdownDays').innerText = d > 0 ? d : "WAR";
             document.getElementById('mottoText').innerText = mottos[Math.floor(Math.random()*mottos.length)];
-            document.getElementById('todayTip').innerText = "V7.2 更新：只有错误超过3次才会自动加入生词本。";
-            switchMode('deep'); checkResume(); updateCounters();
-        };
+            document.getElementById('todayTip').innerText = "V7.2 多用户版：数据完全隔离，刷新自动恢复。";
+            
+            switchMode('deep');
+            checkResume();
+            updateCounters();
+        }
 
         function initStats(w) {
             if (!w.stats) w.stats = { encountered: 0, wrong: 0, known: false };
             return w;
         }
 
-        function normalizeStr(str) { return !str ? "" : str.toString().trim().replace(/[\uff01-\uff5e]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xfee0)).replace(/[˗－﹣－]/g, 'ー').toLowerCase(); }
-        function loadData(key) { try { return JSON.parse(localStorage.getItem(key)); } catch (e) { return null; } }
-        function saveData(key, data) { localStorage.setItem(key, JSON.stringify(data)); }
+        function normalizeStr(str) { 
+            return !str ? "" : str.toString().trim()
+                .replace(/[\uff01-\uff5e]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xfee0))
+                .replace(/[˗－﹣－]/g, 'ー')
+                .toLowerCase(); 
+        }
 
         // --- 文件解析 ---
         document.getElementById('fileInput').addEventListener('change', (e) => {
-            const file = e.target.files[0]; if (!file) return;
+            const file = e.target.files[0]; 
+            if (!file) return;
             const reader = new FileReader();
             reader.onload = (ev) => {
                 const wb = XLSX.read(new Uint8Array(ev.target.result), { type: 'array' });
@@ -241,11 +501,12 @@
 
         // --- 核心流程 ---
         function startSession(data, type) {
-            // 过滤掉已熟知的词
             let activeData = data.filter(w => !w.stats.known);
-            if (activeData.length === 0 && data.length > 0) { alert("所选列表中的单词已全部标记为熟知！"); return; }
+            if (activeData.length === 0 && data.length > 0) { 
+                alert("所选列表中的单词已全部标记为熟知！"); 
+                return; 
+            }
             
-            // 排序逻辑：生词本/顽固本复习时，错误次数多的排前面
             if (type !== 'normal') {
                 activeData.sort((a, b) => b.stats.wrong - a.stats.wrong);
             } else if (type === 'retry') {
@@ -253,7 +514,10 @@
             }
 
             state.queue = activeData;
-            state.index = 0; state.sourceType = type; state.sessionMistakes = [];
+            state.index = 0; 
+            state.sourceType = type; 
+            state.sessionMistakes = [];
+            
             document.getElementById('homeSection').classList.add('hidden-section');
             document.getElementById('studySection').classList.remove('hidden-section');
             document.getElementById('finishSection').classList.add('hidden-section');
@@ -261,19 +525,20 @@
         }
 
         function loadNextWord() {
-            if (state.index >= state.queue.length) { finishSession(); return; }
+            if (state.index >= state.queue.length) { 
+                finishSession(); 
+                return; 
+            }
             
             state.currentWord = state.queue[state.index];
-            state.currentWord.stats.encountered++; // 增加遇见次数
+            state.currentWord.stats.encountered++;
             state.step = 1; 
-            state.currentWrongCount = 0; // 重置当前词错误计数
+            state.currentWrongCount = 0;
             
-            // UI Update
             const qText = document.getElementById('questionText');
             const in1 = document.getElementById('input1');
             const inKanji = document.getElementById('inputKanji');
             
-            // 根据模式显示题目
             if (state.mode === 'meaning') {
                 qText.innerText = state.currentWord.word + (state.currentWord.isKanji ? ` (${state.currentWord.reading})` : "");
                 in1.placeholder = "请输入中文含义 (关键词匹配)";
@@ -285,18 +550,25 @@
             document.getElementById('counter').innerText = `${state.index + 1} / ${state.queue.length}`;
             document.getElementById('progressBar').style.width = `${(state.index / state.queue.length) * 100}%`;
             
-            in1.value = ''; inKanji.value = ''; in1.disabled = false; 
-            document.getElementById('step2Box').classList.add('hidden-section'); // 确保 Step 2 隐藏
-            document.getElementById('answerReveal').classList.add('hidden-section'); // 隐藏答案区
+            in1.value = ''; 
+            inKanji.value = ''; 
+            in1.disabled = false; 
+            document.getElementById('step2Box').classList.add('hidden-section');
+            document.getElementById('answerReveal').classList.add('hidden-section');
             
             renderStrikes();
-            setFeedback("", ""); updateBtnState("verify"); 
+            setFeedback("", ""); 
+            updateBtnState("verify"); 
             setTimeout(() => in1.focus(), 50);
             saveProgress();
         }
 
         function handleEnter() {
-            if (state.step === 3) { state.index++; loadNextWord(); return; } // Next
+            if (state.step === 3) { 
+                state.index++; 
+                loadNextWord(); 
+                return; 
+            }
 
             const in1 = document.getElementById('input1');
             const inKanji = document.getElementById('inputKanji');
@@ -304,28 +576,20 @@
             const valKanji = normalizeStr(inKanji.value);
             const w = state.currentWord;
 
-            let isCorrect = false;
-
-            // --- 验证逻辑分支 ---
             if (state.mode === 'meaning') {
-                // 含义模式：模糊匹配
-                // 逻辑：只要用户的输入包含在答案里，或者答案包含用户输入(且长度>1)，或完全匹配
-                const userVals = val1.replace(/[，,;；]/g, ' ').split(/\s+/); // 用户可能输入多个词
+                const userVals = val1.replace(/[，,;；]/g, ' ').split(/\s+/);
                 const meaningStr = normalizeStr(w.meaning);
-                // 只要有一个用户输入的关键词存在于含义中，算对 (简单模糊)
-                isCorrect = userVals.some(v => v.length > 0 && meaningStr.includes(v));
+                const isCorrect = userVals.some(v => v.length > 0 && meaningStr.includes(v));
                 
-                if (isCorrect) markSuccess(); else markFail(`含义: ${w.meaning}`);
+                if (isCorrect) markSuccess(); 
+                else markFail(`含义: ${w.meaning}`);
 
             } else if (state.step === 1) {
-                // 读音/拼写验证
                 let target = (state.mode === 'deep' && w.isKanji) ? normalizeStr(w.reading) : normalizeStr(w.word);
                 if (val1 === target) {
                     if (state.mode === 'deep' && w.isKanji && normalizeStr(w.reading) !== normalizeStr(w.word)) {
-                        // 进入 Step 2
                         state.step = 2; 
                         in1.disabled = true; 
-                        // Fix V7.1: 确保移除 hidden class 并 focus
                         const box2 = document.getElementById('step2Box');
                         box2.classList.remove('hidden-section'); 
                         inKanji.focus(); 
@@ -337,8 +601,8 @@
                     markFail(target);
                 }
             } else if (state.step === 2) {
-                // 汉字验证
-                if (valKanji === normalizeStr(w.word)) markSuccess(); else markFail(w.word);
+                if (valKanji === normalizeStr(w.word)) markSuccess(); 
+                else markFail(w.word);
             }
         }
 
@@ -350,40 +614,33 @@
 
         function markFail(correctAnswerText) {
             state.currentWrongCount++;
-            state.currentWord.stats.wrong++; // 增加总错误统计
+            state.currentWord.stats.wrong++;
             renderStrikes();
 
-            // 震动特效
             const container = document.getElementById('studySection').querySelector('.glass');
             container.classList.add('shake');
             setTimeout(() => container.classList.remove('shake'), 500);
 
-            // 逻辑更新：只有错误达到3次，才加入生词本
             if (state.currentWrongCount >= 3) {
                 setFeedback(`❌ 错误次数过多！已加入生词本。`, "text-red-600 font-bold");
                 
-                // 显示完整答案
                 document.getElementById('answerReveal').classList.remove('hidden-section');
                 document.getElementById('revealWord').innerText = state.currentWord.word;
                 document.getElementById('revealReading').innerText = state.currentWord.reading;
 
                 addToNotebook(state.currentWord, 'notebook');
                 if (state.sourceType === 'notebook' || state.sourceType === 'stubborn') {
-                    // 如果是在复习生词本时还错3次，加入顽固本
                     addToNotebook(state.currentWord, 'stubborn');
                 }
                 
                 state.step = 3; 
                 updateBtnState("next");
                 
-                // 加入本轮错题集(用于最后复习)
                 if (!state.sessionMistakes.find(x => x.word === state.currentWord.word)) {
                     state.sessionMistakes.push(state.currentWord);
                 }
             } else {
-                // 还没到3次，提示再试
                 setFeedback(`❌ 错误 ( ${state.currentWrongCount} / 3 )，请重试！`, "text-amber-600 font-bold");
-                // 清空当前输入框 refocus
                 if (state.step === 1) { 
                     document.getElementById('input1').value = ''; 
                     document.getElementById('input1').focus(); 
@@ -401,17 +658,14 @@
             } 
         }
 
-        // 标记为熟知
         function markAsKnown() {
             if (state.currentWord) {
                 if (confirm(`确定要将【${state.currentWord.word}】标记为熟知吗？它将不再出现。`)) {
                     state.currentWord.stats.known = true;
-                    // 同步更新到生词本/顽固本
                     updateKnownStatus(notebook, state.currentWord.word);
                     updateKnownStatus(stubborn, state.currentWord.word);
-                    saveData(DB_KEYS.NB, notebook);
-                    saveData(DB_KEYS.SB, stubborn);
-                    // 跳过当前词
+                    saveUserData('notebook', notebook);
+                    saveUserData('stubborn', stubborn);
                     state.index++;
                     loadNextWord();
                 }
@@ -425,19 +679,18 @@
 
         function addToNotebook(wObj, type) {
             let db = type === 'notebook' ? notebook : stubborn;
-            let key = type === 'notebook' ? DB_KEYS.NB : DB_KEYS.SB;
             
-            // 查重：如果已经在里面，更新它的错误统计，移到最前
             let existingIdx = db.findIndex(w => w.word === wObj.word);
             if (existingIdx !== -1) {
-                db[existingIdx].stats.wrong++; // 累加历史错误
-                // 移动到头部
+                db[existingIdx].stats.wrong++;
                 let temp = db.splice(existingIdx, 1)[0];
                 db.unshift(temp);
             } else {
                 db.unshift(wObj);
             }
-            saveData(key, db); updateCounters();
+            
+            saveUserData(type, db);
+            updateCounters();
         }
 
         function renderStrikes() {
@@ -450,12 +703,20 @@
             }
         }
 
-        // --- 辅助函数 & UI ---
-        function setFeedback(msg, cls) { document.getElementById('feedbackBox').innerHTML = `<span class="${cls}">${msg}</span>`; }
+        function setFeedback(msg, cls) { 
+            document.getElementById('feedbackBox').innerHTML = `<span class="${cls}">${msg}</span>`; 
+        }
+
         function updateBtnState(type) {
             const btn = document.getElementById('actionBtn');
-            if (type === 'verify') { btn.innerText = "验证 (Enter)"; btn.className = "w-full bg-indigo-600 hover:bg-indigo-700 text-white font-black py-4 rounded-2xl shadow-lg active:scale-95 transition-all text-lg tracking-wide"; }
-            else { btn.innerText = "下一个 (Enter)"; btn.className = "w-full bg-emerald-500 hover:bg-emerald-600 text-white font-black py-4 rounded-2xl shadow-lg active:scale-95 transition-all text-lg tracking-wide"; btn.focus(); }
+            if (type === 'verify') { 
+                btn.innerText = "验证 (Enter)"; 
+                btn.className = "w-full bg-indigo-600 hover:bg-indigo-700 text-white font-black py-4 rounded-2xl shadow-lg active:scale-95 transition-all text-lg tracking-wide"; 
+            } else { 
+                btn.innerText = "下一个 (Enter)"; 
+                btn.className = "w-full bg-emerald-500 hover:bg-emerald-600 text-white font-black py-4 rounded-2xl shadow-lg active:scale-95 transition-all text-lg tracking-wide"; 
+                btn.focus(); 
+            }
         }
 
         function switchMode(m) {
@@ -463,28 +724,83 @@
             ['Quick','Deep','Meaning'].forEach(t => {
                 const btn = document.getElementById(`btnMode${t}`);
                 if (m === t.toLowerCase()) {
-                    btn.classList.add('active-mode'); btn.classList.remove('text-slate-500');
+                    btn.classList.add('active-mode'); 
+                    btn.classList.remove('text-slate-500');
                 } else {
-                    btn.classList.remove('active-mode'); btn.classList.add('text-slate-500');
+                    btn.classList.remove('active-mode'); 
+                    btn.classList.add('text-slate-500');
                 }
             });
-            if (!document.getElementById('studySection').classList.contains('hidden-section') && state.currentWord) { state.index--; state.index = Math.max(0, state.index); loadNextWord(); } // Reload current
+            if (!document.getElementById('studySection').classList.contains('hidden-section') && state.currentWord) { 
+                state.index--; 
+                state.index = Math.max(0, state.index); 
+                loadNextWord(); 
+            }
         }
 
-        function finishSession() { document.getElementById('studySection').classList.add('hidden-section'); document.getElementById('finishSection').classList.remove('hidden-section'); clearResume(); }
+        function finishSession() { 
+            document.getElementById('studySection').classList.add('hidden-section'); 
+            document.getElementById('finishSection').classList.remove('hidden-section'); 
+            clearResume(); 
+        }
+
         function restartMode(type) {
-            if (type === 'new') location.reload();
-            else if (type === 'retry') startSession(state.queue, 'retry'); // 这里的 queue 已经过滤了 known
-            else if (type === 'review') { if(state.sessionMistakes.length) startSession(state.sessionMistakes, 'review'); else alert("无错题！"); }
+            if (type === 'new') goHome();
+            else if (type === 'retry') startSession(state.queue, 'retry');
+            else if (type === 'review') { 
+                if(state.sessionMistakes.length) startSession(state.sessionMistakes, 'review'); 
+                else alert("无错题！"); 
+            }
+        }
+
+        function goHome() {
+            document.getElementById('studySection').classList.add('hidden-section');
+            document.getElementById('finishSection').classList.add('hidden-section');
+            document.getElementById('homeSection').classList.remove('hidden-section');
+            checkResume();
         }
 
         // --- 持久化 & 弹窗 ---
-        function saveProgress() { if (state.sourceType === 'normal') saveData(DB_KEYS.PROG, { q: state.queue, i: state.index, m: state.mode }); }
-        function checkResume() { const p = loadData(DB_KEYS.PROG); if(p && p.q.length){ document.getElementById('resumeBox').classList.remove('hidden-section'); document.getElementById('resumeText').innerText = `上次进度：${p.i}/${p.q.length}`; } }
-        function resumeStudy() { const p = loadData(DB_KEYS.PROG); if(p){ state.queue=p.q; state.index=p.i; switchMode(p.m||'deep'); document.getElementById('homeSection').classList.add('hidden-section'); document.getElementById('studySection').classList.remove('hidden-section'); loadNextWord(); } }
-        function clearResume() { localStorage.removeItem(DB_KEYS.PROG); document.getElementById('resumeBox').classList.add('hidden-section'); }
-        function openModal(id) { document.getElementById(id).classList.remove('hidden-section'); renderList(id.includes('notebook')?'notebook':'stubborn'); }
-        function closeModal(id) { document.getElementById(id).classList.add('hidden-section'); }
+        function saveProgress() { 
+            if (state.sourceType === 'normal') 
+                saveUserData('progress', { q: state.queue, i: state.index, m: state.mode }); 
+        }
+
+        function checkResume() { 
+            const p = loadUserData('progress'); 
+            if(p && p.q && p.q.length){ 
+                document.getElementById('resumeBox').classList.remove('hidden-section'); 
+                document.getElementById('resumeText').innerText = `上次进度：${p.i}/${p.q.length}`; 
+            } else {
+                document.getElementById('resumeBox').classList.add('hidden-section');
+            }
+        }
+
+        function resumeStudy() { 
+            const p = loadUserData('progress'); 
+            if(p){ 
+                state.queue=p.q; 
+                state.index=p.i; 
+                switchMode(p.m||'deep'); 
+                document.getElementById('homeSection').classList.add('hidden-section'); 
+                document.getElementById('studySection').classList.remove('hidden-section'); 
+                loadNextWord(); 
+            } 
+        }
+
+        function clearResume() { 
+            removeUserData('progress'); 
+            document.getElementById('resumeBox').classList.add('hidden-section'); 
+        }
+
+        function openModal(id) { 
+            document.getElementById(id).classList.remove('hidden-section'); 
+            renderList(id.includes('notebook')?'notebook':'stubborn'); 
+        }
+
+        function closeModal(id) { 
+            document.getElementById(id).classList.add('hidden-section'); 
+        }
         
         function updateCounters() { 
             const nb = notebook.filter(w=>!w.stats.known);
@@ -497,13 +813,11 @@
 
         function renderList(type) {
             const list = (type === 'notebook' ? notebook : stubborn).filter(w => !w.stats.known);
-            // 列表页也按错误次数排序显示
             list.sort((a,b) => b.stats.wrong - a.stats.wrong);
             
             const el = document.getElementById(type === 'notebook' ? 'notebookList' : 'stubbornList');
             el.innerHTML = '';
             list.forEach((w, i) => {
-                // 计算胜率
                 const rate = w.stats.encountered ? Math.round(((w.stats.encountered - w.stats.wrong)/w.stats.encountered)*100) : 0;
                 el.innerHTML += `
                 <div class="flex justify-between items-center p-3 mb-2 bg-white rounded-xl border border-slate-100 shadow-sm">
@@ -521,33 +835,66 @@
 
         function markKnownFromList(type, word) {
             if(confirm("标记为熟知后将永久不再复习，确定吗？")) {
-                updateKnownStatus(notebook, word); updateKnownStatus(stubborn, word);
-                saveData(DB_KEYS.NB, notebook); saveData(DB_KEYS.SB, stubborn);
-                renderList(type); updateCounters();
+                updateKnownStatus(notebook, word); 
+                updateKnownStatus(stubborn, word);
+                saveUserData('notebook', notebook); 
+                saveUserData('stubborn', stubborn);
+                renderList(type); 
+                updateCounters();
             }
         }
 
         function clearData(type) {
             if(confirm("⚠️ 确定要清空此列表吗？")) {
-                if(type==='notebook'){ notebook=[]; saveData(DB_KEYS.NB, notebook); } else { stubborn=[]; saveData(DB_KEYS.SB, stubborn); }
-                renderList(type); updateCounters();
+                if(type==='notebook'){ 
+                    notebook=[]; 
+                    saveUserData('notebook', notebook); 
+                } else { 
+                    stubborn=[]; 
+                    saveUserData('stubborn', stubborn); 
+                }
+                renderList(type); 
+                updateCounters();
             }
         }
+
         function instantKill(type) { 
             const d = type==='notebook'?notebook:stubborn; 
             if(!d.length){alert("列表为空");return;} 
             closeModal(type==='notebook'?'notebookModal':'stubbornModal'); 
             startSession(d, type); 
         }
+
         function exportData(type) {
             const d = (type==='notebook'?notebook:stubborn).filter(w=>!w.stats.known);
             if(!d.length){alert("无数据");return;}
-            const ws = XLSX.utils.aoa_to_sheet([['单词','读音','含义'], ...d.map(w=>[w.word,w.reading,w.meaning])]);
-            const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Mistakes");
-            XLSX.writeFile(wb, `Gina_Mistakes_${type}.xlsx`);
+            const ws = XLSX.utils.aoa_to_sheet([['单词','读音','含义','遇见次数','错误次数'], ...d.map(w=>[w.word,w.reading,w.meaning,w.stats.encountered,w.stats.wrong])]);
+            const wb = XLSX.utils.book_new(); 
+            XLSX.utils.book_append_sheet(wb, ws, "Mistakes");
+            XLSX.writeFile(wb, `${currentUser}_${type}_${new Date().toISOString().slice(0,10)}.xlsx`);
         }
-        function shuffle(arr) { let c = arr.length, r, n = JSON.parse(JSON.stringify(arr)); while(c!=0){ r=Math.floor(Math.random()*c); c--; [n[c], n[r]] = [n[r], n[c]]; } return n; }
-        document.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !document.getElementById('studySection').classList.contains('hidden-section')) handleEnter(); });
+
+        function shuffle(arr) { 
+            let c = arr.length, r, n = JSON.parse(JSON.stringify(arr)); 
+            while(c!=0){ 
+                r=Math.floor(Math.random()*c); 
+                c--; 
+                [n[c], n[r]] = [n[r], n[c]]; 
+            } 
+            return n; 
+        }
+
+        document.addEventListener('keydown', (e) => { 
+            if (e.key === 'Enter' && !document.getElementById('studySection').classList.contains('hidden-section')) 
+                handleEnter(); 
+        });
+
+        // ========================================
+        // 启动应用
+        // ========================================
+        window.onload = () => {
+            checkAutoLogin();
+        };
     </script>
 </body>
 </html>
